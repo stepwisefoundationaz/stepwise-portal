@@ -646,7 +646,7 @@ select.input{cursor:pointer}
       <div class="page-hd">
         <div>
           <div class="page-title">Dashboard</div>
-          <div class="page-sub">Overview of your organization</div>
+          <div class="page-sub" id="dash-range-label">This Month</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
           <select class="input input-sm" id="dash-range" onchange="onRangeChange(this.value)" style="font-size:11px;padding:4px 8px;height:30px">
@@ -657,21 +657,36 @@ select.input{cursor:pointer}
             <option value="all">All Time</option>
             <option value="custom">Custom Range</option>
           </select>
-          <div id="custom-range" style="display:none;gap:6px;align-items:center">
-            <input type="date" class="input input-sm" id="custom-from" style="font-size:11px;padding:4px 8px;height:30px"/>
+          <div id="custom-dates" style="display:none;gap:6px;align-items:center">
+            <input type="date" class="input input-sm" id="dash-from" style="font-size:11px;padding:4px 8px;height:30px"/>
             <span style="font-size:11px;color:var(--text3)">to</span>
-            <input type="date" class="input input-sm" id="custom-to" style="font-size:11px;padding:4px 8px;height:30px"/>
+            <input type="date" class="input input-sm" id="dash-to" style="font-size:11px;padding:4px 8px;height:30px"/>
             <button class="btn btn-primary btn-sm" onclick="applyCustomRange()">Apply</button>
           </div>
         </div>
       </div>
-      <div id="overdue-banner" style="display:none"></div>
+      <div id="overdue-banner" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;margin-bottom:14px;gap:10px;align-items:flex-start">
+        <div style="flex:1">
+          <div id="overdue-text" style="font-size:12px;font-weight:700;color:#dc2626"></div>
+          <div id="overdue-sub" style="font-size:10px;color:#ef4444;margin-top:2px"></div>
+        </div>
+        <button class="btn btn-xs btn-danger" onclick="showTab('invoices')">View All</button>
+      </div>
       <div id="dash-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:16px"></div>
       <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:13px;margin-bottom:14px">
         <div class="card"><div class="card-hd"><div class="card-title">Monthly Revenue</div></div><div class="chart-area"><div class="chart-bars" id="chart-bars"></div></div></div>
         <div class="card"><div class="card-hd"><div class="card-title">Payment Methods</div><div class="card-sub">Click a row to drill in</div></div><div style="padding:3px 13px 13px" id="pay-methods"></div></div>
       </div>
-      <div class="card"><div class="card-hd"><div class="card-title">Recent Invoices</div></div><div id="recent-invs"></div></div>
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-title">Recent Invoices</div>
+          <div style="display:flex;gap:6px">
+            <span class="badge badge-unpaid" id="badge-count" style="display:none"></span>
+            <span class="badge badge-pending" id="badge-queue" style="display:none"></span>
+          </div>
+        </div>
+        <div id="dash-recent-table"></div>
+      </div>
     </div>
 
     <!-- TAB: INVOICES -->
@@ -874,6 +889,22 @@ select.input{cursor:pointer}
 
 <script>
 
+// ── CONSTANTS & INIT ──────────────────────────────────
+const TODAY = new Date().toISOString().slice(0,10);
+
+const LS = {
+  get: (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch(e) { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} }
+};
+
+function getScriptUrl() {
+  return localStorage.getItem('sw_script_url') ||
+    'https://script.google.com/macros/s/AKfycbwe1dcuxlqdV0_Uuy90teLJNjXTHes3PvAcKzo7lv6oetophcsHquU_DWwVEUXbESly/exec';
+}
+
+let currentUser = null;
+
+// ── SYNC ──────────────────────────────────────────────
 let syncQueue={}, syncTimer=null;
 async function syncToSheets(key,data){
   const url=getScriptUrl();if(!url)return;
@@ -1170,6 +1201,19 @@ function getProgramOptions(){
   const classOpts=CLASSES.map(c=>({value:c.name,label:c.name,sub:'Class · '+fmt(c.cost)+'/mo',search:c.name}));
   const itemOpts=ITEMS_LIB.filter(i=>i.cat==='tuition').map(i=>({value:i.name,label:i.name,sub:'Item · '+fmt(i.rate),search:i.name}));
   return[...classOpts,...itemOpts];
+}
+
+// ── DATE RANGE HELPERS ───────────────────────────────
+function onRangeChange(val) {
+  dashRange = val;
+  const cd = document.getElementById('custom-dates');
+  if (cd) cd.style.display = val === 'custom' ? 'flex' : 'none';
+  renderDashboard();
+}
+function applyCustomRange() {
+  dashCustomFrom = document.getElementById('dash-from')?.value || '';
+  dashCustomTo   = document.getElementById('dash-to')?.value   || '';
+  renderDashboard();
 }
 
 // ── DASHBOARD ─────────────────────────────────────────
@@ -2280,8 +2324,6 @@ const DEFAULT_USERS = [
 function loadUsers(){const s=localStorage.getItem('sw_users');if(s){try{return JSON.parse(s);}catch(e){}}localStorage.setItem('sw_users',JSON.stringify(DEFAULT_USERS));return DEFAULT_USERS.map(u=>({...u}));}
 function saveUsersLS(u){localStorage.setItem('sw_users',JSON.stringify(u));}
 let USERS=loadUsers();
-
-let currentUser = null;
 
 // ── USER MGMT FUNCTIONS ───────────────────────────────
 function loadSettings(){
