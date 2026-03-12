@@ -2316,213 +2316,115 @@ checkAutoSend();
 
 // ── AUTH ──────────────────────────────────────────────
 // ── USER MANAGEMENT ──────────────────────────────────
-const DEFAULT_USERS = [
-  { username: 'admin',    password: 'StepWise2026!',  hint: 'Org name + year + !', name: 'Admin',   role: 'Administrator', email: '<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="b7c4c3d2c7c0dec4d2d1d8c2d9d3d6c3ded8d9d6cdf7d0dad6dedb99d4d8da">[email&#160;protected]</a>' },
-  { username: 'staff',    password: 'StepWise!1',     hint: 'Org name + !1',       name: 'Staff',   role: 'Staff Member',  email: '' },
-  { username: 'director', password: 'Director2026!',  hint: 'Title + year + !',    name: 'Director',role: 'Director',      email: '' }
-];
-function loadUsers(){const s=localStorage.getItem('sw_users');if(s){try{return JSON.parse(s);}catch(e){}}localStorage.setItem('sw_users',JSON.stringify(DEFAULT_USERS));return DEFAULT_USERS.map(u=>({...u}));}
-function saveUsersLS(u){localStorage.setItem('sw_users',JSON.stringify(u));}
-let USERS=loadUsers();
+// ── AUTH ──────────────────────────────────────────────
+// Passwords live in Google Script Properties — not here.
+// This file is safe to be public.
 
-// ── USER MGMT FUNCTIONS ───────────────────────────────
-function loadSettings(){
-  const url=getScriptUrl();
-  document.getElementById('script-url').value=url;
-  updateConnectStatus(!!url);
-  updateMyAccountSection();
-  renderUsersList();
-  const appLink=localStorage.getItem('sw_app_link')||'';
-  const linkEl=document.getElementById('app-link-url');
-  if(linkEl)linkEl.value=appLink;
-  // hide user mgmt for non-admins
-  const section=document.getElementById('user-mgmt-section');
-  if(section)section.style.display=(currentUser&&currentUser.role==='Administrator')?'block':'none';
-}
-function updateMyAccountSection(){
-  if(!currentUser)return;
-  const av=document.getElementById('my-avatar');
-  const nm=document.getElementById('my-name');
-  const rl=document.getElementById('my-role');
-  if(av)av.textContent=currentUser.name.slice(0,2).toUpperCase();
-  if(nm)nm.textContent=currentUser.name;
-  if(rl)rl.textContent=currentUser.role;
-}
-function renderUsersList(){
-  const wrap=document.getElementById('users-list-wrap');if(!wrap)return;
-  const users=loadUsers();
-  wrap.innerHTML=`<div style="border:1px solid var(--border);border-radius:9px;overflow:hidden;margin-top:10px">
-    ${users.map((u,i)=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--border);${i===users.length-1?'border-bottom:none':''}">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div style="width:34px;height:34px;border-radius:8px;background:${u.role==='Administrator'?'linear-gradient(135deg,#0f2d52,#2563eb)':'linear-gradient(135deg,#059669,#0891b2)'};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:#fff">${u.name.slice(0,2).toUpperCase()}</div>
-        <div>
-          <div style="font-weight:700;font-size:13px;color:var(--text)">${u.name}</div>
-          <div style="font-size:10px;color:var(--text3)">@${u.username} · ${u.role}${u.email?' · '+u.email:''}</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:5px;align-items:center">
-        ${u.email?`<button class="btn btn-xs btn-blue" onclick="sendLinkToUser(${i})">📧 Send Link</button>`:''}
-        <button class="btn btn-xs btn-warn" onclick="openResetPw(${i})">🔑 Reset PW</button>
-        <button class="btn btn-xs btn-ghost" onclick="openEditUser(${i})">Edit</button>
-        ${users.length>1&&u.username!=='admin'?`<button class="btn btn-xs btn-danger" onclick="deleteUser(${i})">✕</button>`:''}
-      </div>
-    </div>`).join('')}
-  </div>`;
-}
-function openAddUser(){
-  document.getElementById('user-edit-idx').value='';
-  document.getElementById('user-modal-title').textContent='Add User';
-  ['user-name','user-username','user-password','user-hint','user-email'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('user-role').value='Staff Member';
-  document.getElementById('user-password').type='password';
-  openModal('modal-user');
-}
-function openEditUser(idx){
-  const users=loadUsers();const u=users[idx];if(!u)return;
-  document.getElementById('user-edit-idx').value=idx;
-  document.getElementById('user-modal-title').textContent='Edit User';
-  document.getElementById('user-name').value=u.name;
-  document.getElementById('user-username').value=u.username;
-  document.getElementById('user-password').value='';
-  document.getElementById('user-hint').value=u.hint||'';
-  document.getElementById('user-email').value=u.email||'';
-  document.getElementById('user-role').value=u.role;
-  openModal('modal-user');
-}
-function saveUser(){
-  const name=document.getElementById('user-name').value.trim();
-  const username=document.getElementById('user-username').value.trim().toLowerCase().replace(/\s+/g,'.');
-  const password=document.getElementById('user-password').value;
-  const hint=document.getElementById('user-hint').value.trim();
-  const email=document.getElementById('user-email').value.trim();
-  const role=document.getElementById('user-role').value;
-  const editIdx=document.getElementById('user-edit-idx').value;
-  if(!name||!username){toast('⚠️ Name and username are required');return;}
-  const users=loadUsers();
-  if(editIdx===''){
-    if(!password){toast('⚠️ Password is required for new users');return;}
-    if(users.some(u=>u.username===username)){toast('⚠️ Username already exists');return;}
-    users.push({username,password,hint,name,role,email});
-    toast('✅ User created!');
-  } else {
-    const i=parseInt(editIdx);
-    users[i]={...users[i],name,username,hint,role,email};
-    if(password)users[i].password=password;
-    toast('✅ User updated!');
-  }
-  saveUsersLS(users);USERS=users;
-  closeModal('modal-user');renderUsersList();
-}
-function deleteUser(idx){
-  const users=loadUsers();
-  if(users[idx]?.username==='admin'){toast('⚠️ Cannot delete the admin account');return;}
-  if(!confirm('Remove user '+users[idx]?.name+'?'))return;
-  users.splice(idx,1);saveUsersLS(users);USERS=users;renderUsersList();toast('🗑 User removed');
-}
-function openResetPw(idx){
-  const users=loadUsers();const u=users[idx];if(!u)return;
-  document.getElementById('reset-pw-idx').value=idx;
-  document.getElementById('reset-pw-sub').textContent='Resetting password for '+u.name+' (@'+u.username+')';
-  document.getElementById('reset-pw-new').value='';
-  document.getElementById('reset-pw-confirm').value='';
-  openModal('modal-reset-pw');
-}
-function confirmResetPw(){
-  const idx=parseInt(document.getElementById('reset-pw-idx').value);
-  const pw=document.getElementById('reset-pw-new').value;
-  const conf=document.getElementById('reset-pw-confirm').value;
-  if(!pw){toast('⚠️ Enter a new password');return;}
-  if(pw!==conf){toast('⚠️ Passwords do not match');return;}
-  const users=loadUsers();
-  users[idx].password=pw;
-  saveUsersLS(users);USERS=users;
-  closeModal('modal-reset-pw');
-  toast('✅ Password reset for '+users[idx].name);
-}
-function changeMyPassword(){
-  if(!currentUser){toast('⚠️ Not logged in');return;}
-  const current=document.getElementById('pw-current').value;
-  const newPw=document.getElementById('pw-new').value;
-  const confirm2=document.getElementById('pw-confirm').value;
-  if(!current||!newPw||!confirm2){toast('⚠️ Fill in all password fields');return;}
-  const users=loadUsers();
-  const idx=users.findIndex(u=>u.username===currentUser.username);
-  if(idx<0||users[idx].password!==current){toast('❌ Current password is incorrect');return;}
-  if(newPw!==confirm2){toast('⚠️ New passwords do not match');return;}
-  users[idx].password=newPw;
-  saveUsersLS(users);USERS=users;
-  currentUser={...currentUser,password:newPw};
-  // Update session
-  const session=JSON.stringify({username:currentUser.username,password:newPw});
-  sessionStorage.setItem('sw_session',session);
-  if(localStorage.getItem('sw_session'))localStorage.setItem('sw_session',session);
-  ['pw-current','pw-new','pw-confirm'].forEach(id=>document.getElementById(id).value='');
-  toast('✅ Password updated successfully!');
-}
-function sendAppLink(){
-  const url=document.getElementById('app-link-url').value.trim();
-  const to=document.getElementById('app-link-email').value.trim();
-  if(!url){toast('⚠️ Paste the Google Drive share link first');return;}
-  localStorage.setItem('sw_app_link',url);
-  const subject='StepWise Foundation – Staff Portal Access';
-  const body=`Hi,
-
-You've been given access to the StepWise Foundation invoicing portal.
-
-Click the link below to open the app:
-${url}
-
-Sign in with the username and password provided by your administrator.
-
-If you have any issues, contact: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6c1f18091c1b051f090a031902080d180503020d162c0b010d0500420f0301">[email&#160;protected]</a>
-
-StepWise Foundation Team`;
-  const mailtoLink=`mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  window.location.href=mailtoLink;
-}
-function sendLinkToUser(idx){
-  const users=loadUsers();
-  const u=users[idx];
-  if(!u.email){toast('⚠️ This user has no email on file');return;}
-  const url=localStorage.getItem('sw_app_link')||'';
-  if(!url){toast('⚠️ Set the app URL in the Share section first');return;}
-  const subject='StepWise Foundation – Staff Portal Access';
-  const body='Hi '+u.name+',\n\nYou have been given access to the StepWise Foundation invoicing portal.\n\nOpen it here: '+url+'\n\nUsername: '+u.username+'\nContact your administrator for your password.\n\nStepWise Foundation';
-  window.location.href='mailto:'+u.email+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+function getScriptUrl() {
+  return localStorage.getItem('sw_script_url') || 'https://script.google.com/macros/s/AKfycby3YhR42FU2GyfjvmeJqcr1oOVUHY1RcC3i5K7llolrk_dPa0RpBe9_eCJ3fwsiatu8/exec';
 }
 
+// ── SESSION ───────────────────────────────────────────
+function getSession() {
+  try {
+    const s = sessionStorage.getItem('sw_token');
+    if (s) return JSON.parse(s);
+    const l = localStorage.getItem('sw_token');
+    if (l) return JSON.parse(l);
+  } catch(e) {}
+  return null;
+}
+
+function saveSession(tokenData, remember) {
+  const s = JSON.stringify(tokenData);
+  sessionStorage.setItem('sw_token', s);
+  if (remember) localStorage.setItem('sw_token', s);
+}
+
+function clearSession() {
+  sessionStorage.removeItem('sw_token');
+  localStorage.removeItem('sw_token');
+}
+
+// ── INIT ──────────────────────────────────────────────
 function initAuth() {
-    const saved = localStorage.getItem('sw_session');
-  if (saved) {
-    try {
-      const s = JSON.parse(saved);
-      const users = loadUsers();
-      const u = users.find(x => x.username === s.username && x.password === s.password);
-      if (u) { currentUser = u; showApp(); return; }
-    } catch(e) {}
+  const sess = getSession();
+  if (sess && sess.token) {
+    // Validate token with GAS before letting in
+    document.getElementById('login-page').classList.remove('hidden');
+    validateSessionToken(sess);
+  } else {
+    document.getElementById('login-page').classList.remove('hidden');
   }
-  const sess = sessionStorage.getItem('sw_session');
-  if (sess) {
-    try {
-      const s = JSON.parse(sess);
-      const users = loadUsers();
-      const u = users.find(x => x.username === s.username && x.password === s.password);
-      if (u) { currentUser = u; showApp(); return; }
-    } catch(e) {}
-  }
-  document.getElementById('login-page').classList.remove('hidden');
 }
 
+function validateSessionToken(sess) {
+  const url = getScriptUrl();
+  const btn = document.getElementById('login-btn');
+
+  // Show subtle "resuming session" state
+  if (btn) { btn.disabled = true; btn.textContent = 'Resuming session…'; }
+
+  // Try google.script.run first (when served from Apps Script)
+  if (typeof google !== 'undefined' && google.script) {
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.ok) {
+          currentUser = res.user;
+          if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
+          showApp();
+        } else {
+          clearSession();
+          if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
+        }
+      })
+      .withFailureHandler(function() {
+        clearSession();
+        if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
+      })
+      .serverValidateToken(sess.token);
+    return;
+  }
+
+  // XHR fallback
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', url + '?action=validateToken&token=' + encodeURIComponent(sess.token), true);
+  xhr.timeout = 8000;
+  xhr.onload = function() {
+    try {
+      const res = JSON.parse(xhr.responseText);
+      if (res.ok) {
+        currentUser = res.user;
+        if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
+        showApp();
+      } else {
+        clearSession();
+        if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
+      }
+    } catch(e) {
+      clearSession();
+      if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
+    }
+  };
+  xhr.onerror = xhr.ontimeout = function() {
+    clearSession();
+    if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
+  };
+  xhr.send();
+}
+
+// ── LOGIN ─────────────────────────────────────────────
 function doLogin() {
   const usernameVal = document.getElementById('login-user').value.trim().toLowerCase();
   const passwordVal = document.getElementById('login-pass').value;
   const remember    = document.getElementById('login-remember').checked;
-  const errEl       = document.getElementById('login-error');
-  const btn         = document.getElementById('login-btn');
+  const errEl = document.getElementById('login-error');
+  const btn   = document.getElementById('login-btn');
+
   errEl.classList.remove('show');
   document.getElementById('login-user').classList.remove('error');
   document.getElementById('login-pass').classList.remove('error');
+
   if (!usernameVal || !passwordVal) {
     errEl.textContent = 'Please enter your username and password.';
     errEl.classList.add('show');
@@ -2530,59 +2432,96 @@ function doLogin() {
     if (!passwordVal) document.getElementById('login-pass').classList.add('error');
     return;
   }
+
   btn.disabled = true;
   btn.textContent = 'Signing in…';
-  setTimeout(() => {
-    const users = loadUsers();
-    const user = users.find(u => u.username === usernameVal && u.password === passwordVal);
-    if (user) {
-      currentUser = user;
-      const session = JSON.stringify({ username: user.username, password: user.password });
-      if (remember) localStorage.setItem('sw_session', session);
-      sessionStorage.setItem('sw_session', session);
-      showApp();
-    } else {
-      errEl.textContent = 'Incorrect username or password. Please try again.';
-      errEl.classList.add('show');
-      document.getElementById('login-user').classList.add('error');
-      document.getElementById('login-pass').classList.add('error');
-      btn.disabled = false;
-      btn.textContent = 'Sign In';
-      document.getElementById('login-pass').value = '';
-      document.getElementById('login-pass').focus();
+
+  const url = getScriptUrl();
+
+  // Try google.script.run first
+  if (typeof google !== 'undefined' && google.script) {
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.ok) {
+          currentUser = res.user;
+          saveSession({ token: res.token, user: res.user }, remember);
+          showApp();
+        } else {
+          showLoginError(errEl, btn, res ? res.error : 'Login failed');
+        }
+      })
+      .withFailureHandler(function(e) {
+        showLoginError(errEl, btn, 'Could not reach authentication server');
+      })
+      .serverLogin(usernameVal, passwordVal);
+    return;
+  }
+
+  // XHR POST fallback
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', url, true);
+  xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
+  xhr.timeout = 12000;
+  xhr.onload = function() {
+    try {
+      const res = JSON.parse(xhr.responseText);
+      if (res.ok) {
+        currentUser = res.user;
+        saveSession({ token: res.token, user: res.user }, remember);
+        showApp();
+      } else {
+        showLoginError(errEl, btn, res.error || 'Invalid username or password');
+      }
+    } catch(e) {
+      showLoginError(errEl, btn, 'Unexpected response from server');
     }
-  }, 700);
+  };
+  xhr.onerror = xhr.ontimeout = function() {
+    showLoginError(errEl, btn, 'Could not reach server — check your connection');
+  };
+  xhr.send(JSON.stringify({ action: 'login', username: usernameVal, password: passwordVal }));
 }
 
+function showLoginError(errEl, btn, msg) {
+  errEl.textContent = msg || 'Login failed. Please try again.';
+  errEl.classList.add('show');
+  document.getElementById('login-user').classList.add('error');
+  document.getElementById('login-pass').classList.add('error');
+  btn.disabled = false;
+  btn.textContent = 'Sign In';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-pass').focus();
+}
+
+// ── SHOW APP / LOGOUT ─────────────────────────────────
 function showApp() {
   document.getElementById('login-page').classList.add('hidden');
-  setTimeout(loadFromCloud, 400);
+  const sess = getSession();
+  setTimeout(() => loadFromCloud(sess ? sess.token : null), 400);
   if (currentUser) {
-    const av = document.querySelector('.sb-avatar');
+    const av    = document.querySelector('.sb-avatar');
     const uname = document.querySelector('.sb-uname');
     const urole = document.querySelector('.sb-urole');
-    if (av) av.textContent = currentUser.name.slice(0,2).toUpperCase();
+    if (av)    av.textContent    = currentUser.name.slice(0,2).toUpperCase();
     if (uname) uname.textContent = currentUser.name;
     if (urole) urole.textContent = currentUser.role;
-    const sb = document.querySelector('.sb-bottom');
-    if (sb && !document.getElementById('logout-btn-sb')) {
-      const btn = document.createElement('button');
-      btn.id = 'logout-btn-sb';
-      btn.textContent = '⎋ Sign Out';
-      btn.style.cssText = 'width:100%;margin-top:8px;padding:6px;font-size:10px;font-weight:600;border-radius:6px;cursor:pointer;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:rgba(255,255,255,.5);transition:all .15s;font-family:inherit';
-      btn.onmouseover = () => { btn.style.background='rgba(255,255,255,.12)'; btn.style.color='#fff'; };
-      btn.onmouseout  = () => { btn.style.background='rgba(255,255,255,.05)'; btn.style.color='rgba(255,255,255,.5)'; };
-      btn.onclick = doLogout;
-      sb.appendChild(btn);
-    }
   }
   renderDashboard();
 }
 
 function doLogout() {
   if (!confirm('Sign out of StepWise?')) return;
-  localStorage.removeItem('sw_session');
-  sessionStorage.removeItem('sw_session');
+  // Revoke token on server
+  const sess = getSession();
+  if (sess && sess.token) {
+    const url = getScriptUrl();
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', url + '?action=logout&token=' + encodeURIComponent(sess.token), true);
+      xhr.send();
+    } catch(e) {}
+  }
+  clearSession();
   currentUser = null;
   document.getElementById('login-user').value = '';
   document.getElementById('login-pass').value = '';
@@ -2595,20 +2534,186 @@ function doLogout() {
   document.getElementById('login-page').classList.remove('hidden');
 }
 
-function togglePwVis() {
-  const input = document.getElementById('login-pass');
-  const btn   = document.getElementById('eye-btn');
-  if (input.type === 'password') {
-    input.type = 'text';
-    btn.textContent = '🙈';
-    btn.title = 'Hide password';
-  } else {
-    input.type = 'password';
-    btn.textContent = '👁';
-    btn.title = 'Show password';
-  }
+// ── USER MANAGEMENT (via GAS) ─────────────────────────
+function loadUsers() {
+  // Returns cached users list for display only — auth is always server-side
+  return JSON.parse(localStorage.getItem('sw_users_cache') || '[]');
+}
+function saveUsersLS(u) {
+  localStorage.setItem('sw_users_cache', JSON.stringify(u));
+}
+let USERS = [];
+
+function renderUsersList() {
+  const wrap = document.getElementById('users-list');
+  if (!wrap) return;
+  // Fetch current users from GAS
+  const sess = getSession();
+  if (!sess) return;
+  const url = getScriptUrl();
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', url + '?action=getUsers&token=' + encodeURIComponent(sess.token), true);
+  xhr.timeout = 8000;
+  xhr.onload = function() {
+    try {
+      const res = JSON.parse(xhr.responseText);
+      if (res.ok && res.users) {
+        USERS = res.users;
+        localStorage.setItem('sw_users_cache', JSON.stringify(USERS));
+        renderUsersListFromCache();
+      }
+    } catch(e) {
+      renderUsersListFromCache();
+    }
+  };
+  xhr.onerror = function() { renderUsersListFromCache(); };
+  xhr.send();
 }
 
+function renderUsersListFromCache() {
+  const wrap = document.getElementById('users-list');
+  if (!wrap) return;
+  const users = loadUsers();
+  if (!users.length) {
+    wrap.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:10px 0">No users loaded. Connected to Google Sheets?</div>';
+    return;
+  }
+  wrap.innerHTML = users.map((u, i) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:34px;height:34px;border-radius:8px;background:${u.role==='Administrator'?'linear-gradient(135deg,#0f2d52,#2563eb)':'linear-gradient(135deg,#059669,#0891b2)'};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:#fff">${u.name.slice(0,2).toUpperCase()}</div>
+        <div>
+          <div style="font-weight:700;font-size:13px">${u.name}</div>
+          <div style="font-size:10px;color:var(--text3)">@${u.username} · ${u.role}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:5px">
+        <button class="btn btn-xs btn-warn" onclick="openResetPw('${u.username}')">🔑 Reset PW</button>
+        ${u.username !== 'admin' ? `<button class="btn btn-xs btn-danger" onclick="deleteUser('${u.username}')">✕</button>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+function saveUser() {
+  const name     = document.getElementById('user-name').value.trim();
+  const username = document.getElementById('user-username').value.trim().toLowerCase();
+  const password = document.getElementById('user-password').value;
+  const role     = document.getElementById('user-role').value;
+  const email    = document.getElementById('user-email').value.trim();
+  if (!name || !username || !password) { toast('⚠️ Name, username and password are required'); return; }
+  const sess = getSession();
+  if (!sess) { toast('⚠️ Not authenticated'); return; }
+  const url = getScriptUrl();
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', url, true);
+  xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
+  xhr.onload = function() {
+    try {
+      const res = JSON.parse(xhr.responseText);
+      if (res.ok) { toast('✅ User saved!'); closeModal('modal-user'); renderUsersList(); }
+      else toast('❌ ' + (res.error || 'Failed'));
+    } catch(e) { toast('❌ Server error'); }
+  };
+  xhr.send(JSON.stringify({ action: 'addUser', token: sess.token, username, password, name, role, email }));
+}
+
+function deleteUser(username) {
+  if (!confirm('Remove user ' + username + '?')) return;
+  const sess = getSession();
+  if (!sess) return;
+  const url = getScriptUrl();
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', url, true);
+  xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
+  xhr.onload = function() {
+    try {
+      const res = JSON.parse(xhr.responseText);
+      if (res.ok) { toast('🗑 User removed'); renderUsersList(); }
+      else toast('❌ ' + (res.error || 'Failed'));
+    } catch(e) {}
+  };
+  xhr.send(JSON.stringify({ action: 'deleteUser', token: sess.token, username }));
+}
+
+function openResetPw(username) {
+  document.getElementById('reset-pw-idx').value = username;
+  document.getElementById('reset-pw-sub').textContent = 'Resetting password for @' + username;
+  document.getElementById('reset-pw-new').value = '';
+  document.getElementById('reset-pw-confirm').value = '';
+  openModal('modal-reset-pw');
+}
+
+function confirmResetPw() {
+  const username = document.getElementById('reset-pw-idx').value;
+  const pw       = document.getElementById('reset-pw-new').value;
+  const conf     = document.getElementById('reset-pw-confirm').value;
+  if (!pw) { toast('⚠️ Enter a new password'); return; }
+  if (pw !== conf) { toast('⚠️ Passwords do not match'); return; }
+  const sess = getSession();
+  if (!sess) return;
+  const url = getScriptUrl();
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', url, true);
+  xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
+  xhr.onload = function() {
+    try {
+      const res = JSON.parse(xhr.responseText);
+      if (res.ok) { toast('✅ Password reset!'); closeModal('modal-reset-pw'); }
+      else toast('❌ ' + (res.error || 'Failed'));
+    } catch(e) {}
+  };
+  xhr.send(JSON.stringify({ action: 'changePassword', token: sess.token, username, currentPassword: '', newPassword: pw }));
+}
+
+function changeMyPassword() {
+  if (!currentUser) { toast('⚠️ Not logged in'); return; }
+  const current = document.getElementById('pw-current').value;
+  const newPw   = document.getElementById('pw-new').value;
+  const conf    = document.getElementById('pw-confirm').value;
+  if (!current || !newPw || !conf) { toast('⚠️ Fill in all fields'); return; }
+  if (newPw !== conf) { toast('⚠️ New passwords do not match'); return; }
+  const sess = getSession();
+  const url = getScriptUrl();
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', url, true);
+  xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
+  xhr.onload = function() {
+    try {
+      const res = JSON.parse(xhr.responseText);
+      if (res.ok) {
+        ['pw-current','pw-new','pw-confirm'].forEach(id => document.getElementById(id).value = '');
+        toast('✅ Password updated!');
+      } else toast('❌ ' + (res.error || 'Failed'));
+    } catch(e) {}
+  };
+  xhr.send(JSON.stringify({ action: 'changePassword', token: sess.token, username: currentUser.username, currentPassword: current, newPassword: newPw }));
+}
+
+function loadSettings() {
+  const url = getScriptUrl();
+  const urlEl = document.getElementById('script-url');
+  if (urlEl) urlEl.value = url;
+  updateConnectStatus(!!url);
+  updateMyAccountSection();
+  renderUsersList();
+  const appLink = localStorage.getItem('sw_app_link') || '';
+  const linkEl = document.getElementById('app-link-url');
+  if (linkEl) linkEl.value = appLink;
+  const umCard = document.getElementById('user-mgmt-card');
+  if (umCard) umCard.style.display = (currentUser && currentUser.role === 'Administrator') ? 'block' : 'none';
+}
+
+function updateMyAccountSection() {
+  if (!currentUser) return;
+  const av = document.getElementById('my-avatar');
+  const nm = document.getElementById('my-name');
+  const rl = document.getElementById('my-role');
+  if (av) av.textContent = currentUser.name.slice(0,2).toUpperCase();
+  if (nm) nm.textContent = currentUser.name;
+  if (rl) rl.textContent = currentUser.role;
+}
+
+// ── FORGOT PASSWORD ───────────────────────────────────
 function showForgot() {
   document.getElementById('login-main-form').style.display = 'none';
   document.getElementById('forgot-panel').classList.add('show');
@@ -2624,16 +2729,35 @@ function showLogin() {
 }
 
 function doForgot() {
-  const val = document.getElementById('forgot-user').value.trim().toLowerCase();
-  const errEl = document.getElementById('forgot-error');
-  errEl.style.display = 'none';
-  if (!val) { errEl.textContent='Enter your username.'; errEl.style.display='block'; return; }
-  const users = loadUsers();
-  const user = users.find(u => u.username === val);
-  if (!user) { errEl.textContent='Username not found.'; errEl.style.display='block'; return; }
+  // No hints — passwords are server-side now. Just direct them to admin.
   document.getElementById('forgot-form').style.display = 'none';
-  document.getElementById('reset-hint-text').textContent = 'Hint for "' + user.username + '": ' + user.hint;
+  document.getElementById('reset-hint-text').textContent = 'Contact your administrator to reset your password.';
   document.getElementById('reset-success').classList.add('show');
+}
+
+// ── MISC ──────────────────────────────────────────────
+function togglePwVis() {
+  const input = document.getElementById('login-pass');
+  const btn   = document.getElementById('eye-btn');
+  if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
+  else { input.type = 'password'; btn.textContent = '👁'; }
+}
+
+function sendAppLink() {
+  const url = document.getElementById('app-link-url')?.value.trim();
+  if (!url) { toast('⚠️ Enter the app URL first'); return; }
+  localStorage.setItem('sw_app_link', url);
+  const subject = 'StepWise Foundation – Staff Portal Access';
+  const body = `Hi,\n\nYou've been given access to the StepWise Foundation staff portal.\n\nOpen it here: ${url}\n\nSign in with the username and password your administrator provided.\n\nStepWise Foundation`;
+  window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+}
+
+function openAddUser() {
+  document.getElementById('user-edit-idx').value = '';
+  document.getElementById('user-modal-title').textContent = 'Add User';
+  ['user-name','user-username','user-password','user-email'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('user-role').value = 'Staff Member';
+  openModal('modal-user');
 }
 
 initAuth();
