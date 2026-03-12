@@ -752,7 +752,7 @@ select.input{cursor:pointer}
     <div class="content" id="tab-classes">
       <div class="page-hd">
         <div><div class="page-title">Classes</div></div>
-        <button class="btn btn-primary btn-sm" onclick="openNewClass()">＋ New Class</button>
+        <button class="btn btn-primary btn-sm" onclick="openAddClass()">＋ New Class</button>
       </div>
       <div id="classes-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px"></div>
     </div>
@@ -2768,14 +2768,6 @@ initAuth();
 </script>
 
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-// Auto-resize for Google Sites iframe embedding
-function notifyResize() {
-  const h = Math.max(document.body.scrollHeight, document.body.offsetHeight, 800);
-  try {
-    google.script.host.setHeight(h);
-  } catch(e) {
-    // Not in Apps Script co
 <!-- Mobile Bottom Nav -->
 <div id="mobile-nav">
   <style>
@@ -2824,7 +2816,5 @@ function notifyResize() {
   </div>
 </div>
 
-initAuth();
-</script>
 </body>
 </html>
