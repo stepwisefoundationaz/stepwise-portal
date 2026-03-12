@@ -915,16 +915,18 @@ async function syncToSheets(key,data){
 async function flushSyncQueue(){
   if(!Object.keys(syncQueue).length)return;
   const keys={...syncQueue};syncQueue={};
+  const sess=getSession();
+  const token=sess?sess.token:null;
   // Use google.script.run if served from Apps Script
   if(typeof google!=='undefined'&&google.script){
     google.script.run
       .withSuccessHandler(function(){console.log('Synced to Sheets');})
       .withFailureHandler(function(e){console.error('Sync failed:',e);})
-      .serverSyncAll(keys);
+      .serverSyncAll(keys,token);
     return;
   }
   // XHR fallback
-  const url=getScriptUrl();if(!url)return;
+  const url=getScriptUrl();if(!url||!token)return;
   try{
     const xhr=new XMLHttpRequest();
     xhr.open('POST',url,true);
@@ -932,42 +934,44 @@ async function flushSyncQueue(){
     xhr.withCredentials=false;
     xhr.onload=function(){ console.log('Sync response:',xhr.status,xhr.responseText.slice(0,100)); };
     xhr.onerror=function(){ console.error('Sync failed'); };
-    xhr.send(JSON.stringify({action:'syncAll',keys}));
+    xhr.send(JSON.stringify({action:'syncAll',keys,token}));
   }catch(e){ console.error('Sync error:',e); }
 }
 
 // Load ALL data from Google Drive on startup — overwrites localStorage with cloud data
 let cloudLoaded=false;
-async function loadFromCloud(){
+async function loadFromCloud(token){
+  if(!token){const sess=getSession();token=sess?sess.token:null;}
   showCloudStatus('loading');
   // Use google.script.run if served from Apps Script (Google Sites)
   if(typeof google!=='undefined'&&google.script){
     google.script.run
       .withSuccessHandler(function(data){
-        if(data){
-          const keys=['sw_families','sw_invoices','sw_classes','sw_items','sw_recurring','sw_item_cats','sw_users'];
+        if(data&&data.ok){
+          const d=data.data||data;
+          const keys=['sw_families','sw_invoices','sw_classes','sw_items','sw_recurring','sw_item_cats'];
           let loaded=0;
-          keys.forEach(k=>{if(data[k]!==undefined&&data[k]!==null){localStorage.setItem(k,JSON.stringify(data[k]));loaded++;}});
+          keys.forEach(k=>{if(d[k]!==undefined&&d[k]!==null){localStorage.setItem(k,JSON.stringify(d[k]));loaded++;}});
           FAMILIES=LS.get('sw_families')||FAMILIES;
           INVOICES=LS.get('sw_invoices')||INVOICES;
           CLASSES=LS.get('sw_classes')||CLASSES;
           ITEMS_LIB=LS.get('sw_items')||ITEMS_LIB;
           RECURRING=LS.get('sw_recurring')||RECURRING;
           ITEM_CATS=LS.get('sw_item_cats')||ITEM_CATS;
-          USERS=loadUsers();
           cloudLoaded=true;
           showCloudStatus('online',loaded);
           renderDashboard();
-        } else { showCloudStatus('error',0,'No data returned'); }
+        } else { showCloudStatus('error',0,(data&&data.error)||'No data returned'); }
       })
       .withFailureHandler(function(e){ showCloudStatus('error',0,e.message||e); })
-      .serverGetAll();
+      .serverGetAll(token);
     return;
   }
   // XHR fallback for standalone hosting
   const url=getScriptUrl();
   if(!url){showCloudStatus('offline');return;}
-  xhrGet(url+'?action=getAll', function(j){
+  if(!token){showCloudStatus('error',0,'Not authenticated');return;}
+  xhrGet(url+'?action=getAll&token='+encodeURIComponent(token), function(j){
     if(j&&j.ok&&j.data){
       const d=j.data;
       const keys=['sw_families','sw_invoices','sw_classes','sw_items','sw_recurring','sw_item_cats','sw_users'];
