@@ -51,6 +51,16 @@ html,body{min-height:950px}body{background:var(--bg);color:var(--text);font-fami
 .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}
 .chart-row{display:grid;grid-template-columns:1.5fr 1fr;gap:13px;margin-bottom:14px}
 @media(max-width:900px){.stat-grid{grid-template-columns:repeat(2,1fr)!important}.chart-row{grid-template-columns:1fr!important}}
+/* Clickable name links throughout the app */
+.link-text{color:var(--blue);font-weight:600;cursor:pointer;text-decoration:none;background:none;border:none;font-family:inherit;font-size:inherit;padding:0}
+.link-text:hover{text-decoration:underline;color:var(--navy)}
+/* Class detail & family roster rows */
+.roster-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);transition:background .1s}
+.roster-row:hover{background:var(--bg)}
+.roster-row:last-child{border-bottom:none}
+.roster-av{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:#fff;flex-shrink:0}
+.roster-name{font-weight:600;font-size:12px;color:var(--text)}
+.roster-sub{font-size:10px;color:var(--text3);margin-top:2px}
 .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:19px;font-weight:800;color:var(--text);letter-spacing:-.4px}
 .page-sub{font-size:11px;color:var(--text3);margin-top:2px}
 /* DASHBOARD DATE BAR */
@@ -1592,8 +1602,8 @@ function invRowFull(inv){
   const emailTag=!inv.emailSent?'<span class="badge badge-pending" style="font-size:9px">Not Sent</span>':'';
   return`<tr class="${inactive?'inactive-row':''}">
     <td><span class="td-num">${inv.num}</span>${emailTag}</td>
-    <td class="td-name">${inv.familyName}</td>
-    <td><div class="td-date">${inv.studentName||'—'}${inactive?' <span class="badge badge-inactive" style="font-size:9px">Inactive</span>':''}</div><div class="td-info">${inv.program||''}</div></td>
+    <td><span class="link-text" onclick="goToFamily('${inv.familyId}')" title="Open family profile">${inv.familyName}</span></td>
+    <td><div class="td-date"><span class="link-text" onclick="goToFamily('${inv.familyId}')" title="Open family profile">${inv.studentName||'—'}</span>${inactive?' <span class="badge badge-inactive" style="font-size:9px">Inactive</span>':''}</div><div class="td-info">${inv.program||''}</div></td>
     <td class="td-amt">${fmt(sum(inv.items))}</td>
     <td class="td-date">${inv.issueDate}</td>
     <td class="${s==='overdue'?'td-overdue':'td-date'}">${inv.dueDate}${s==='overdue'?' ⚠️':''}</td>
@@ -1622,8 +1632,8 @@ function renderSendQueue(){
     <div class="send-row" id="sqrow-${inv.id}">
       <input type="checkbox" class="sq-chk" value="${inv.id}" style="width:15px;height:15px;accent-color:var(--navy);cursor:pointer;flex-shrink:0"/>
       <div style="flex:1">
-        <div style="display:flex;align-items:center;gap:7px"><span class="td-num">${inv.num}</span><span class="td-name">${inv.familyName}</span><span class="badge badge-pending">Unsent</span></div>
-        <div style="font-size:10px;color:var(--text3);margin-top:3px">${inv.studentName||'—'} · ${fmt(sum(inv.items))} · Due ${inv.dueDate} · To: ${inv.email}</div>
+        <div style="display:flex;align-items:center;gap:7px"><span class="td-num">${inv.num}</span><span class="link-text" onclick="goToFamily('${inv.familyId}')">${inv.familyName}</span><span class="badge badge-pending">Unsent</span></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px"><span class="link-text" onclick="goToFamily('${inv.familyId}')" style="font-size:10px">${inv.studentName||'—'}</span> · ${fmt(sum(inv.items))} · Due ${inv.dueDate} · To: ${inv.email}</div>
       </div>
       <div style="display:flex;gap:5px">
         <button class="btn btn-xs btn-ghost" onclick="printInvoice('${inv.id}')">PDF</button>
@@ -1689,7 +1699,7 @@ function renderFamilies(){
         <div>
           <div class="fam-name">${f.lastName} Family</div>
           <div class="fam-sub">${pp.name} · ${pp.email}${pp.phone?' · '+pp.phone:''}</div>
-          <div style="margin-top:3px">${f.students.map(s=>`<span class="fam-tag ${isStudentActive(s)?'':'inactive'}">🎓 ${s.name}${!isStudentActive(s)?' (inactive)':''}</span>`).join('')}</div>
+          <div style="margin-top:3px">${f.students.map(s=>{const cls=CLASSES.find(c=>c.enrolledIds.includes(s.id));return`<span class="fam-tag ${isStudentActive(s)?'':'inactive'}" onclick="event.stopPropagation();${cls?`openClassDetailByStudent('${s.id}')`:''}">🎓 <span class="${cls?'link-text':''" style="font-size:11px">${s.name}</span>${cls?` · ${cls.name}`:''}${!isStudentActive(s)?' (inactive)':''}</span>`;}).join('')}</div>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
@@ -1704,8 +1714,11 @@ function renderFamilies(){
 function renderClasses(){
   const wrap=document.getElementById('classes-wrap');if(!wrap)return;
   if(!CLASSES.length){wrap.innerHTML='<div class="empty" style="padding:40px"><div class="empty-icon">🎯</div><div class="empty-title">No classes yet</div><div class="empty-sub">Click "+ New Class" to add your first class</div></div>';return;}
+  const allStudents=getAllStudents();
   wrap.innerHTML=`<div class="class-grid">${CLASSES.map(c=>{
-    const enrolled=c.enrolledIds.length,cap=c.capacity||0,pct=cap?Math.min(enrolled/cap*100,100):50,full=cap&&enrolled>=cap;
+    // Only count IDs that correspond to real students
+    const enrolledStudents=allStudents.filter(s=>c.enrolledIds.includes(s.id));
+    const enrolled=enrolledStudents.length,cap=c.capacity||0,pct=cap?Math.min(enrolled/cap*100,100):50,full=cap&&enrolled>=cap;
     return`<div class="class-card" onclick="openClassDetail('${c.id}')">
       <div class="class-card-top"><div><div class="class-name">${c.name}</div><div class="class-instructor">👤 ${c.instructor||'—'}</div></div><div style="text-align:right"><div class="class-price">${fmt(c.cost)}</div><div class="class-price-sub">${c.billing==='recurring'?'/mo':'one-time'}</div></div></div>
       <div class="class-meta">${c.days?`<span class="class-chip">📅 ${c.days}</span>`:''} ${c.timeStart?`<span class="class-chip">🕐 ${fmt12(c.timeStart)}–${fmt12(c.timeEnd)}</span>`:''} <span class="badge ${c.billing==='recurring'?'badge-active':'badge-pending'}">${c.billing==='recurring'?'Monthly':'One-Time'}</span>${full?'<span class="badge badge-overdue">Full</span>':''}</div>
@@ -2268,21 +2281,53 @@ function saveFamily(){
 function deleteFamily(id){if(!confirm('Remove this family and all their data?'))return;FAMILIES=FAMILIES.filter(f=>f.id!==id);localStorage.setItem('sw_families',JSON.stringify(FAMILIES));flushSyncQueue.cancel&&flushSyncQueue.cancel();syncToSheets('sw_families',FAMILIES);renderFamilies();toast('🗑 Family removed');}
 
 // ── FAMILY HISTORY ────────────────────────────────────
+// goToFamily — universal nav: close any open modal, jump to Families tab, open family profile
+function goToFamily(fid){
+  document.querySelectorAll('.overlay.open').forEach(m=>m.classList.remove('open'));
+  showTab('families');
+  setTimeout(()=>openFamilyHistory(fid),60);
+}
+
+// Open class detail by finding which class a student is in
+function openClassDetailByStudent(sid){
+  const cls=CLASSES.find(c=>c.enrolledIds.includes(sid));
+  if(cls){closeModal('modal-history');showTab('classes');setTimeout(()=>openClassDetail(cls.id),60);}
+  else toast('This student is not currently enrolled in a class.');
+}
+
 function openFamilyHistory(fid){
   const f=FAMILIES.find(x=>x.id===fid);if(!f)return;
   const pp=getPrimaryParent(f);
   document.getElementById('fh-name').textContent=f.lastName+' Family';
-  document.getElementById('fh-sub').textContent=pp.name+' · '+pp.email+' · Students: '+f.students.map(s=>s.name+(isStudentActive(s)?'':' (inactive)')).join(', ');
+  document.getElementById('fh-sub').textContent=pp.name+' · '+pp.email+(pp.phone?' · '+pp.phone:'');
   const famInvs=INVOICES.filter(i=>i.familyId===fid).sort((a,b)=>b.issueDate.localeCompare(a.issueDate));
   const paid=famInvs.filter(i=>i.status==='paid').reduce((s,i)=>s+sum(i.items),0);
   const owed=famInvs.filter(i=>i.status!=='paid').reduce((s,i)=>s+sum(i.items),0);
-  document.getElementById('fh-mini-stats').innerHTML=`<div class="mini-stat"><div class="mini-lbl">Total Paid</div><div class="mini-val">${fmt(paid)}</div></div><div class="mini-stat"><div class="mini-lbl">Invoices</div><div class="mini-val">${famInvs.length}</div></div><div class="mini-stat"><div class="mini-lbl">Outstanding</div><div class="mini-val" style="color:${owed>0?'var(--amber)':'var(--green)'}">${owed>0?fmt(owed):'None'}</div></div>`;
+  const stuLinks=f.students.map(s=>{
+    const cls=CLASSES.find(c=>c.enrolledIds.includes(s.id));
+    return `<span class="link-text" onclick="openClassDetailByStudent('${s.id}')" title="${cls?'Open '+cls.name:'Not enrolled'}" style="margin-right:8px">${s.name}${s.grade?' ('+s.grade+')':''}</span>`;
+  }).join('');
+  document.getElementById('fh-mini-stats').innerHTML=
+    `<div class="mini-stat"><div class="mini-lbl">Total Paid</div><div class="mini-val">${fmt(paid)}</div></div>`+
+    `<div class="mini-stat"><div class="mini-lbl">Invoices</div><div class="mini-val">${famInvs.length}</div></div>`+
+    `<div class="mini-stat"><div class="mini-lbl">Outstanding</div><div class="mini-val" style="color:${owed>0?'var(--amber)':'var(--green)'}">${owed>0?fmt(owed):'None'}</div></div>`+
+    `<div class="mini-stat" style="grid-column:1/-1"><div class="mini-lbl">Students</div><div class="mini-val" style="font-weight:500;font-size:12px">${stuLinks}</div></div>`;
   const pmIcons={ClassWallet:'🏫',PayPal:'💙',Check:'📝',Cash:'💵'};
-  document.getElementById('fh-history-list').innerHTML=famInvs.length?famInvs.map(inv=>{const s=getStatus(inv);const pmIcon=pmIcons[inv.payMethod]||'';return`<div class="hist-item" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)"><div><span class="td-num">${inv.num}</span><div style="font-size:10px;color:var(--text3);margin-top:2px">${inv.issueDate}${inv.payDate?' · Paid '+inv.payDate+' '+pmIcon+(inv.payRef?' #'+inv.payRef:''):'· Due '+inv.dueDate}</div></div><div style="display:flex;align-items:center;gap:8px">${badgeHtml(s)}<span class="td-amt">${fmt(sum(inv.items))}</span><button class="btn btn-xs btn-ghost" onclick="printInvoice('${inv.id}')">PDF</button></div></div>`;}).join(''):'<div style="padding:20px;text-align:center;color:var(--text3);font-size:11px">No invoices yet.</div>';
+  document.getElementById('fh-history-list').innerHTML=famInvs.length?famInvs.map(inv=>{
+    const s=getStatus(inv);const pmIcon=pmIcons[inv.payMethod]||'';
+    return`<div class="hist-item" style="display:flex;justify-content:space-between;align-items:center;padding:9px 2px;border-bottom:1px solid var(--border)">
+      <div><div style="display:flex;align-items:center;gap:6px"><span class="td-num">${inv.num}</span>${badgeHtml(s)}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:3px">${inv.studentName||''} · ${inv.issueDate}${inv.payDate?' · Paid '+inv.payDate+' '+pmIcon+(inv.payRef?' #'+inv.payRef:''):'· Due '+inv.dueDate}</div></div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <span class="td-amt">${fmt(sum(inv.items))}</span>
+        ${s!=='paid'?`<button class="btn btn-xs btn-success" onclick="closeModal('modal-history');openMarkPaid('${inv.id}')">✓ Paid</button>`:''}
+        <button class="btn btn-xs btn-ghost" onclick="closeModal('modal-history');editInvoice('${inv.id}')">Edit</button>
+        <button class="btn btn-xs btn-ghost" onclick="printInvoice('${inv.id}')">PDF</button>
+      </div></div>`;}).join(''):
+    '<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">No invoices yet.</div>';
   document.getElementById('fh-new-btn').onclick=()=>{closeModal('modal-history');openNewInvoiceForFamily(fid);};
   openModal('modal-history');
 }
-
 // ── CLASS MODAL ───────────────────────────────────────
 function openAddClass(){document.getElementById('class-edit-id').value='';document.getElementById('class-modal-title').textContent='New Class';['class-name','class-instructor','class-desc','class-days'].forEach(id=>document.getElementById(id).value='');document.getElementById('class-cost').value='';document.getElementById('class-billing').value='recurring';document.getElementById('class-capacity').value='';document.getElementById('class-time-start').value='';document.getElementById('class-time-end').value='';openModal('modal-class');}
 function openEditClass(id){const c=CLASSES.find(x=>x.id===id);if(!c)return;document.getElementById('class-edit-id').value=id;document.getElementById('class-modal-title').textContent='Edit Class';document.getElementById('class-name').value=c.name;document.getElementById('class-instructor').value=c.instructor||'';document.getElementById('class-desc').value=c.description||'';document.getElementById('class-cost').value=c.cost||'';document.getElementById('class-billing').value=c.billing||'recurring';document.getElementById('class-capacity').value=c.capacity||'';document.getElementById('class-days').value=c.days||'';document.getElementById('class-time-start').value=c.timeStart||'';document.getElementById('class-time-end').value=c.timeEnd||'';openModal('modal-class');}
@@ -2291,18 +2336,32 @@ function openClassDetail(id){
   const c=CLASSES.find(x=>x.id===id);if(!c)return;
   const allStudents=getAllStudents();
   const enrolled=allStudents.filter(s=>c.enrolledIds.includes(s.id));
+  c.enrolledIds=enrolled.map(s=>s.id); // prune stale IDs
   document.getElementById('cd-name').textContent=c.name;
   document.getElementById('cd-sub').textContent=`👤 ${c.instructor||'—'} · ${fmt(c.cost)}${c.billing==='recurring'?'/mo':''} · ${enrolled.length}${c.capacity?' / '+c.capacity:''} enrolled`;
   document.getElementById('cd-body').innerHTML=`
     ${c.description?`<div style="padding:12px 18px;background:var(--bg);border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)">${c.description}</div>`:''}
     <div style="padding:14px 18px">
-      <div class="slabel">Enrolled (${enrolled.length}${c.capacity?' / '+c.capacity:''})</div>
+      <div class="slabel" style="margin-bottom:8px">Enrolled Students (${enrolled.length}${c.capacity?' / '+c.capacity:''})</div>
       <div style="border:1px solid var(--border);border-radius:7px;overflow:hidden;margin-bottom:14px">
-        ${enrolled.length?enrolled.map(s=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 13px;border-bottom:1px solid var(--border)"><div><div style="font-weight:600;font-size:12px">${s.name}</div><div style="font-size:10px;color:var(--text3)">${s.familyName} · ${s.grade||''}</div></div><div style="display:flex;gap:5px"><span class="badge ${isStudentActive(s)?'badge-active':'badge-inactive'}">${isStudentActive(s)?'Active':'Inactive'}</span><button class="btn btn-xs btn-danger" onclick="removeFromClass('${c.id}','${s.id}')">Remove</button></div></div>`).join(''):
-        '<div style="padding:16px;text-align:center;font-size:11px;color:var(--text3)">No students enrolled.</div>'}
+        ${enrolled.length?enrolled.map(s=>`
+          <div class="roster-row" onclick="goToFamily('${s.familyId}')" title="Open ${s.familyName} family profile" style="cursor:pointer">
+            <div class="roster-av" style="background:${getAvColor(s.familyName)}">${getInitials(s.name)}</div>
+            <div style="flex:1;min-width:0">
+              <div class="roster-name">${s.name}</div>
+              <div class="roster-sub"><span class="link-text" onclick="event.stopPropagation();goToFamily('${s.familyId}')">${s.familyName} Family</span>${s.grade?' · '+s.grade:''}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+              <span class="badge ${isStudentActive(s)?'badge-active':'badge-inactive'}">${isStudentActive(s)?'Active':'Inactive'}</span>
+              <button class="btn btn-xs btn-ghost" onclick="event.stopPropagation();openFamilyHistory('${s.familyId}')">📋 History</button>
+              <button class="btn btn-xs btn-ghost" onclick="event.stopPropagation();openNewInvoiceForFamily('${s.familyId}')">Invoice</button>
+              <button class="btn btn-xs btn-danger" onclick="event.stopPropagation();removeFromClass('${c.id}','${s.id}')">Remove</button>
+            </div>
+          </div>`).join(''):
+        '<div style="padding:20px;text-align:center;font-size:12px;color:var(--text3)">No students enrolled yet — add one below.</div>'}
       </div>
-      ${(c.waitlist||[]).length?`<div class="slabel">Waitlist</div><div style="border:1px solid var(--border);border-radius:7px;margin-bottom:14px">${allStudents.filter(s=>(c.waitlist||[]).includes(s.id)).map(s=>`<div style="display:flex;justify-content:space-between;padding:8px 13px;border-bottom:1px solid var(--border)"><span style="font-size:12px;font-weight:600">${s.name} (${s.familyName})</span><div style="display:flex;gap:5px"><button class="btn btn-xs btn-success" onclick="promoteFromWaitlist('${c.id}','${s.id}')">Enroll</button><button class="btn btn-xs btn-danger" onclick="removeFromWaitlist('${c.id}','${s.id}')">Remove</button></div></div>`).join('')}</div>`:''}
-      <div class="slabel">Add Student</div>
+      ${(c.waitlist||[]).length?`<div class="slabel" style="margin-bottom:8px">Waitlist</div><div style="border:1px solid var(--border);border-radius:7px;margin-bottom:14px">${allStudents.filter(s=>(c.waitlist||[]).includes(s.id)).map(s=>`<div class="roster-row"><div class="roster-av" style="background:${getAvColor(s.familyName)}">${getInitials(s.name)}</div><div style="flex:1"><div class="roster-name">${s.name}</div><div class="roster-sub"><span class="link-text" onclick="goToFamily('${s.familyId}')">${s.familyName} Family</span></div></div><div style="display:flex;gap:5px"><button class="btn btn-xs btn-success" onclick="promoteFromWaitlist('${c.id}','${s.id}')">Enroll</button><button class="btn btn-xs btn-danger" onclick="removeFromWaitlist('${c.id}','${s.id}')">Remove</button></div></div>`).join('')}</div>`:''}
+      <div class="slabel" style="margin-bottom:8px">Add Student to This Class</div>
       <div style="display:flex;gap:7px">
         <select class="input" id="add-to-class-sel" style="flex:1"><option value="">Select student…</option>${allStudents.filter(s=>!c.enrolledIds.includes(s.id)).map(s=>`<option value="${s.id}">${s.name} (${s.familyName})</option>`).join('')}</select>
         <button class="btn btn-primary btn-sm" onclick="addStudentToClass('${c.id}')">Add</button>
