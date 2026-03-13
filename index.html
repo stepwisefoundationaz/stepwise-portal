@@ -1381,12 +1381,12 @@ const TAB_META={dashboard:{icon:'📊',name:'Dashboard'},invoices:{icon:'🧾',n
 function showTab(name){
   document.querySelectorAll('.content').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.sb-item').forEach(el=>el.classList.remove('active'));
-  // Update mobile nav active state
-  document.querySelectorAll('.mnav-btn').forEach(b=>b.classList.remove('active'));
-  const tabOrder=['dashboard','invoices','families','classes','settings'];
-  const mi=tabOrder.indexOf(name);
-  const mbtns=document.querySelectorAll('#mobile-nav .mnav-btn');
-  if(mi>=0&&mbtns[mi])mbtns[mi].classList.add('active');
+  // Update mobile bottom bar active state
+  document.querySelectorAll('#mobile-nav .mnav-btn').forEach(b=>b.classList.remove('active'));
+  const primaryTabs=['dashboard','invoices','families','classes'];
+  const mBtn=document.getElementById('mnav-'+name);
+  if(mBtn) mBtn.classList.add('active');
+  else{const moreBtn=document.getElementById('mnav-more-btn');if(moreBtn)moreBtn.classList.add('active');}
   const t=document.getElementById('tab-'+name);if(t)t.classList.add('active');
   const n=document.getElementById('nav-'+name);if(n)n.classList.add('active');
   const m=TAB_META[name]||{icon:'📄',name};
@@ -2358,7 +2358,7 @@ function saveFamily(){
     emergencyContacts:famEmergencyContacts.map(e=>({...e}))
   };
   if(editId)FAMILIES=FAMILIES.map(f=>f.id===editId?fam:f);else FAMILIES.push(fam);
-  fam.students.forEach(s=>{CLASSES.forEach(c=>{const should=(s.classIds||[]).includes(c.id)&&isStudentActive(s);const has=c.enrolledIds.includes(s.id);if(should&&!has)c.enrolledIds.push(s.id);else if(!should&&has)c.enrolledIds=c.enrolledIds.filter(x=>x!==s.id);});});
+  try{fam.students.forEach(s=>{(CLASSES||[]).forEach(c=>{const should=(s.classIds||[]).includes(c.id)&&isStudentActive(s);const has=(c.enrolledIds||[]).includes(s.id);if(should&&!has)c.enrolledIds.push(s.id);else if(!should&&has)c.enrolledIds=(c.enrolledIds||[]).filter(x=>x!==s.id);});});}catch(e){console.warn('Class sync (non-fatal):',e);}
   save('sw_families',FAMILIES);save('sw_classes',CLASSES);
   closeModal('modal-family');renderFamilies();renderClasses();
   toast('✅ '+fam.lastName+' Family saved!');
@@ -2540,14 +2540,13 @@ function savePDF(filename){
   const frame=document.getElementById('pdf-frame');
   if(!frame)return;
   try{
-    // Use print dialog with PDF destination — most reliable cross-browser approach
     const win=frame.contentWindow;
     const name=(filename||'invoice').replace(/[^a-zA-Z0-9-]/g,'_');
-    // Set document title so browser uses it as filename
     frame.contentDocument.title=name;
-    win.print();
-  }catch(e){toast('Use 🖨 Print → Save as PDF in the print dialog');}
-}
+    toast('🖨 Print dialog opening — choose "Save as PDF" as the destination');
+    setTimeout(()=>win.print(),300);
+  }catch(e){toast('Use your browser\'s Print → Save as PDF option');}}
+
 function printInvoiceObj(inv){
   const t = sum(inv.items);
   const family = FAMILIES.find(f => f.id === inv.familyId) || {};
@@ -2658,8 +2657,7 @@ function printInvoiceObj(inv){
     <div style="background:#fff;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #e4e8ef;flex-shrink:0">
       <div style="font-weight:700;font-size:13px;color:#0f2d52">${inv.num} — Invoice Preview</div>
       <div style="display:flex;gap:8px">
-        <button onclick="savePDF('${inv.num}')" style="background:#059669;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Save PDF</button>
-        <button onclick="document.getElementById('pdf-frame').contentWindow.print()" style="background:#0f2d52;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🖨 Print</button>
+        <button onclick="savePDF('${inv.num}')" style="background:#059669;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit" title="Opens print dialog — choose 'Save as PDF'">🖨 Print / Save PDF</button>
         <button onclick="document.getElementById('pdf-overlay').style.display='none'" style="background:#f1f5f9;color:#0f2d52;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">✕ Close</button>
       </div>
     </div>
@@ -2667,16 +2665,17 @@ function printInvoiceObj(inv){
   overlay.style.display = 'flex';
 
   const frame = document.getElementById('pdf-frame');
-  const doc = frame.contentDocument || frame.contentWindow.document;
-  doc.open();
-  doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+  const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
     <style>
       * { box-sizing:border-box; margin:0; padding:0; }
       body { font-family:'Segoe UI',Arial,sans-serif; background:#e5e7eb; padding:24px; }
       @media print { body { background:#fff; padding:0; } }
     </style>
-    </head><body>${html}</body></html>`);
-  doc.close();
+    </head><body>${html}</body></html>`;
+  const blob = new Blob([fullHtml], {type: 'text/html; charset=utf-8'});
+  const blobUrl = URL.createObjectURL(blob);
+  frame.onload = function() { URL.revokeObjectURL(blobUrl); };
+  frame.src = blobUrl;
 }
 
 
@@ -3406,38 +3405,165 @@ initAuth();
     .mnav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     .mnav-item { position: relative; flex: 1; display: flex; }
     .mnav-item .mnav-btn { flex: 1; }
+
+    /* Full-screen slide-up menu */
+    #mnav-more-panel {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: #0f2d52;
+      z-index: 1100;
+      border-radius: 18px 18px 0 0;
+      padding: 0 0 env(safe-area-inset-bottom);
+      transform: translateY(100%);
+      transition: transform .28s cubic-bezier(.16,1,.3,1);
+      box-shadow: 0 -8px 40px rgba(0,0,0,.4);
+    }
+    #mnav-more-panel.open { transform: translateY(0); }
+    #mnav-more-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 1099;
+      display: none;
+      backdrop-filter: blur(2px);
+    }
+    #mnav-more-backdrop.open { display: block; }
+    .mnav-more-handle {
+      width: 36px; height: 4px; background: rgba(255,255,255,.25);
+      border-radius: 10px; margin: 10px auto 4px;
+    }
+    .mnav-more-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 18px 8px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .mnav-more-title {
+      font-size: 12px; font-weight: 700; color: rgba(255,255,255,.6);
+      text-transform: uppercase; letter-spacing: 1.2px;
+    }
+    .mnav-close-btn {
+      background: rgba(255,255,255,.1); border: none; border-radius: 50%;
+      width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+      color: rgba(255,255,255,.7); font-size: 14px; cursor: pointer;
+      font-family: inherit; transition: background .15s;
+    }
+    .mnav-close-btn:hover { background: rgba(255,255,255,.2); color:#fff; }
+    .mnav-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8px; padding: 12px 14px 16px;
+    }
+    .mnav-grid-btn {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px; border-radius: 10px;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08);
+      color: rgba(255,255,255,.7); cursor: pointer;
+      font-family: inherit; font-size: 12px; font-weight: 600;
+      text-align: left; transition: all .15s; text-transform: none; letter-spacing: 0;
+    }
+    .mnav-grid-btn:active, .mnav-grid-btn.active { background: rgba(255,255,255,.15); color:#fff; border-color:rgba(255,255,255,.2); }
+    .mnav-grid-btn .mg-icon { font-size: 18px; line-height: 1; flex-shrink: 0; }
+    .mnav-divider { grid-column: 1 / -1; height: 1px; background: rgba(255,255,255,.07); margin: 2px 0; }
+    .mnav-logout-row { padding: 4px 14px 10px; }
+    .mnav-logout-btn {
+      width: 100%; padding: 10px; border-radius: 8px;
+      background: rgba(220,38,38,.15); border: 1px solid rgba(220,38,38,.3);
+      color: #fca5a5; font-size: 12px; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: all .15s;
+    }
+    .mnav-logout-btn:active { background: rgba(220,38,38,.3); }
   </style>
+
+  <!-- Backdrop -->
+  <div id="mnav-more-backdrop" onclick="closeMobileMenu()"></div>
+
+  <!-- Slide-up panel -->
+  <div id="mnav-more-panel">
+    <div class="mnav-more-handle"></div>
+    <div class="mnav-more-header">
+      <span class="mnav-more-title">All Sections</span>
+      <button class="mnav-close-btn" onclick="closeMobileMenu()">✕</button>
+    </div>
+    <div class="mnav-grid">
+      <button class="mnav-grid-btn" onclick="mnavGo('dashboard')"><span class="mg-icon">📊</span>Dashboard</button>
+      <button class="mnav-grid-btn" onclick="mnavGo('invoices')"><span class="mg-icon">🧾</span>Invoices</button>
+      <button class="mnav-grid-btn" onclick="mnavGo('send-queue')"><span class="mg-icon">📤</span>Ready to Send</button>
+      <button class="mnav-grid-btn" onclick="mnavGo('families')"><span class="mg-icon">👨‍👩‍👧</span>Families</button>
+      <button class="mnav-grid-btn" onclick="mnavGo('classes')"><span class="mg-icon">🏋️</span>Classes</button>
+      <button class="mnav-grid-btn" onclick="mnavGo('items')"><span class="mg-icon">📦</span>Items Library</button>
+      <button class="mnav-grid-btn" onclick="mnavGo('recurring')"><span class="mg-icon">🔁</span>Recurring Billing</button>
+      <button class="mnav-grid-btn" onclick="mnavGo('reports')"><span class="mg-icon">📈</span>Revenue</button>
+      <div class="mnav-divider"></div>
+      <button class="mnav-grid-btn" onclick="mnavGo('settings')"><span class="mg-icon">⚙️</span>Settings</button>
+      <button class="mnav-grid-btn" onclick="refreshFromCloud();closeMobileMenu()"><span class="mg-icon">↻</span>Sync Data</button>
+    </div>
+    <div class="mnav-logout-row">
+      <button class="mnav-logout-btn" onclick="doLogout()">⎋ Sign Out</button>
+    </div>
+  </div>
+
+  <!-- Bottom bar (5 primary tabs + More) -->
   <div class="mnav-item">
-    <button class="mnav-btn" onclick="showTab('dashboard')">
+    <button class="mnav-btn" id="mnav-dashboard" onclick="showTab('dashboard')">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
       Dash
     </button>
   </div>
   <div class="mnav-item">
-    <button class="mnav-btn" onclick="showTab('invoices')">
+    <button class="mnav-btn" id="mnav-invoices" onclick="showTab('invoices')">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       Invoices
     </button>
   </div>
   <div class="mnav-item">
-    <button class="mnav-btn" onclick="showTab('families')">
+    <button class="mnav-btn" id="mnav-families" onclick="showTab('families')">
       <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       Families
     </button>
   </div>
   <div class="mnav-item">
-    <button class="mnav-btn" onclick="showTab('classes')">
+    <button class="mnav-btn" id="mnav-classes" onclick="showTab('classes')">
       <svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 0 3-3h7z"/></svg>
       Classes
     </button>
   </div>
   <div class="mnav-item">
-    <button class="mnav-btn" onclick="showTab('settings')">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      Settings
+    <button class="mnav-btn" id="mnav-more-btn" onclick="openMobileMenu()">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/></svg>
+      More
     </button>
   </div>
 </div>
+<script>
+function openMobileMenu(){
+  document.getElementById('mnav-more-panel').classList.add('open');
+  document.getElementById('mnav-more-backdrop').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeMobileMenu(){
+  document.getElementById('mnav-more-panel').classList.remove('open');
+  document.getElementById('mnav-more-backdrop').classList.remove('open');
+  document.body.style.overflow='';
+}
+function mnavGo(tab){
+  closeMobileMenu();
+  setTimeout(()=>showTab(tab),80);
+}
+// Keep bottom-bar active state in sync with current tab
+(function(){
+  const origShowTab = typeof showTab === 'function' ? showTab : null;
+  if(!origShowTab) return;
+  window._mnavUpdate = function(tab){
+    ['dashboard','invoices','families','classes'].forEach(t=>{
+      const btn = document.getElementById('mnav-'+t);
+      if(btn) btn.classList.toggle('active', t===tab);
+    });
+    const more = document.getElementById('mnav-more-btn');
+    if(more) more.classList.toggle('active', !['dashboard','invoices','families','classes'].includes(tab));
+    // sync panel buttons too
+    document.querySelectorAll('.mnav-grid-btn').forEach(b=>{
+      b.classList.remove('active');
+    });
+  };
+})();
+</script>
 
 </body>
 </html>
