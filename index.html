@@ -1186,13 +1186,7 @@ select.input{cursor:pointer}
 // ── CONSTANTS & INIT ──────────────────────────────────
 const TODAY = new Date().toISOString().slice(0,10);
 
-// One-time migration: wipe stale demo data from older builds.
-// Bump DATA_VERSION any time you need to force a clean slate.
-const DATA_VERSION = '2026-03-v5';
-if(localStorage.getItem('sw_data_version') !== DATA_VERSION){
-  ['sw_families','sw_invoices','sw_classes','sw_items','sw_recurring','sw_item_cats','sw_programs'].forEach(k=>localStorage.removeItem(k));
-  localStorage.setItem('sw_data_version', DATA_VERSION);
-}
+// DATA_VERSION: no longer wipes localStorage — cloud load always wins on startup.
 
 const LS = {
   get: (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch(e) { return null; } },
@@ -1237,58 +1231,38 @@ async function flushSyncQueue(){
 
 // Load ALL data from Google Drive on startup — overwrites localStorage with cloud data
 let cloudLoaded=false;
-async function loadFromCloud(token, callback){
+// loadFromCloud: used by ↻ Refresh button. For startup, use loadFromCloudBlocking via showApp().
+function loadFromCloud(token, callback){
   if(!token){const sess=getSession();token=sess?sess.token:null;}
   showCloudStatus('loading');
-  // Use google.script.run if served from Apps Script (Google Sites)
+
   if(typeof google!=='undefined'&&google.script){
     google.script.run
       .withSuccessHandler(function(data){
         if(data&&data.ok){
-          const d=data.data||data;
-          const keys=['sw_families','sw_invoices','sw_classes','sw_items','sw_recurring','sw_item_cats','sw_programs'];
-          let loaded=0;
-          keys.forEach(k=>{if(d[k]!==undefined&&d[k]!==null){localStorage.setItem(k,JSON.stringify(d[k]));loaded++;}});
-          FAMILIES=LS.get('sw_families')||FAMILIES;
-          INVOICES=LS.get('sw_invoices')||INVOICES;
-          CLASSES=LS.get('sw_classes')||CLASSES;
-          ITEMS_LIB=LS.get('sw_items')||ITEMS_LIB;
-          RECURRING=LS.get('sw_recurring')||RECURRING;
-          ITEM_CATS=LS.get('sw_item_cats')||ITEM_CATS;
-          PROGRAMS=LS.get('sw_programs')||PROGRAMS;
+          const count=applyCloudData(data.data||data);
           cloudLoaded=true;
-          showCloudStatus('online',loaded);
-          renderDashboard();
-        } else { showCloudStatus('error',0,(data&&data.error)||'No data returned'); }
+          showCloudStatus('online',count);
+          renderAllTabs();
+          if(callback)callback();
+        } else { showCloudStatus('error',0,(data&&data.error)||'No data'); if(callback)callback(); }
       })
-      .withFailureHandler(function(e){ showCloudStatus('error',0,e.message||e); })
+      .withFailureHandler(function(e){ showCloudStatus('error',0,e.message||e); if(callback)callback(); })
       .serverGetAll(token);
     return;
   }
-  // XHR fallback for standalone hosting
   const url=getScriptUrl();
-  if(!url){showCloudStatus('offline');return;}
-  if(!token){showCloudStatus('error',0,'Not authenticated');return;}
+  if(!url){showCloudStatus('offline');if(callback)callback();return;}
+  if(!token){showCloudStatus('error',0,'Not authenticated');if(callback)callback();return;}
   xhrGet(url+'?action=getAll&token='+encodeURIComponent(token), function(j){
     if(j&&j.ok&&j.data){
-      const d=j.data;
-      const keys=['sw_families','sw_invoices','sw_classes','sw_items','sw_recurring','sw_item_cats','sw_programs','sw_users'];
-      let loaded=0;
-      keys.forEach(k=>{if(d[k]!==undefined&&d[k]!==null){localStorage.setItem(k,JSON.stringify(d[k]));loaded++;}});
-      FAMILIES=LS.get('sw_families')||FAMILIES;
-      INVOICES=LS.get('sw_invoices')||INVOICES;
-      CLASSES=LS.get('sw_classes')||CLASSES;
-      ITEMS_LIB=LS.get('sw_items')||ITEMS_LIB;
-      RECURRING=LS.get('sw_recurring')||RECURRING;
-      ITEM_CATS=LS.get('sw_item_cats')||ITEM_CATS;
-      PROGRAMS=LS.get('sw_programs')||PROGRAMS;
-      USERS=loadUsers();
+      const count=applyCloudData(j.data);
       cloudLoaded=true;
-      showCloudStatus('online',loaded);
-      renderDashboard();renderInvoiceTable();renderFamilies();renderClasses();renderItemsLib();renderRecurring();
+      showCloudStatus('online',count);
+      renderAllTabs();
       if(callback)callback();
     } else { showCloudStatus('error',0,j?j.error:'no response'); if(callback)callback(); }
-  }, function(e){ showCloudStatus('error',0,e); });
+  }, function(e){ showCloudStatus('error',0,e); if(callback)callback(); });
 }
 
 function xhrGet(url, onSuccess, onError){
@@ -2770,12 +2744,10 @@ function getScriptUrl() {
 
 // Manual refresh — syncs latest data from Google Sheets then re-renders current tab
 function refreshFromCloud() {
-  const btn = document.querySelector('.tb-right .btn-ghost');
-  if (btn) { btn.textContent = '⏳ Syncing…'; btn.disabled = true; }
-  loadFromCloud(null, function() {
-    if (btn) { btn.textContent = '↻ Refresh'; btn.disabled = false; }
-  });
+  showLoadingScreen();
+  runCloudSync(null);
 }
+
 
 // ── SESSION ───────────────────────────────────────────
 function getSession() {
@@ -2803,8 +2775,8 @@ function clearSession() {
 function initAuth() {
   const sess = getSession();
   if (sess && sess.token) {
-    // Validate token with GAS before letting in
-    document.getElementById('login-page').classList.remove('hidden');
+    // Has a stored token — try to resume silently before showing login
+    // Keep login page hidden briefly while we validate
     validateSessionToken(sess);
   } else {
     document.getElementById('login-page').classList.remove('hidden');
@@ -2815,8 +2787,11 @@ function validateSessionToken(sess) {
   const url = getScriptUrl();
   const btn = document.getElementById('login-btn');
 
-  // Show subtle "resuming session" state
+  // Show "resuming session" state on login button
   if (btn) { btn.disabled = true; btn.textContent = 'Resuming session…'; }
+  // Also show a subtle loading note on the login card
+  const loginSub = document.querySelector('.login-subtitle');
+  if (loginSub) loginSub.textContent = 'Reconnecting to your session…';
 
   // Try google.script.run first (when served from Apps Script)
   if (typeof google !== 'undefined' && google.script) {
@@ -2828,11 +2803,13 @@ function validateSessionToken(sess) {
           showApp();
         } else {
           clearSession();
+          document.getElementById('login-page').classList.remove('hidden');
           if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
         }
       })
       .withFailureHandler(function() {
         clearSession();
+        document.getElementById('login-page').classList.remove('hidden');
         if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
       })
       .serverValidateToken(sess.token);
@@ -2852,15 +2829,18 @@ function validateSessionToken(sess) {
         showApp();
       } else {
         clearSession();
+        document.getElementById('login-page').classList.remove('hidden');
         if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
       }
     } catch(e) {
       clearSession();
+      document.getElementById('login-page').classList.remove('hidden');
       if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
     }
   };
   xhr.onerror = xhr.ontimeout = function() {
     clearSession();
+    document.getElementById('login-page').classList.remove('hidden');
     if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
   };
   xhr.send();
@@ -2947,10 +2927,83 @@ function showLoginError(errEl, btn, msg) {
 }
 
 // ── SHOW APP / LOGOUT ─────────────────────────────────
+// ── LOADING SCREEN ────────────────────────────────────
+// Shown after login. App is fully hidden until cloud sync completes.
+// Every device always gets fresh data from Google Sheets — no stale cache.
+
+function showLoadingScreen() {
+  let lo = document.getElementById('sw-loading');
+  if (!lo) {
+    lo = document.createElement('div');
+    lo.id = 'sw-loading';
+    lo.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0f2d52;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;font-family:"Inter",sans-serif;transition:opacity .35s ease';
+    lo.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;gap:22px">'
+      + '<div style="width:64px;height:64px;background:rgba(255,255,255,.1);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:32px">&#127947;</div>'
+      + '<div style="text-align:center">'
+      + '<div style="font-size:20px;font-weight:800;color:#fff;letter-spacing:-.3px">StepWise Foundation</div>'
+      + '<div id="sw-load-msg" style="font-size:13px;color:#93c5fd;margin-top:6px">Syncing data...</div>'
+      + '</div>'
+      + '<div id="sw-load-dots" style="display:flex;gap:7px">'
+      + '<div class="sw-dot"></div><div class="sw-dot"></div><div class="sw-dot"></div>'
+      + '</div>'
+      + '<div id="sw-load-error" style="display:none;text-align:center">'
+      + '<div style="color:#fca5a5;font-size:13px;margin-bottom:12px" id="sw-load-err-msg"></div>'
+      + '<button onclick="retryCloudSync()" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">&#8635; Retry</button>'
+      + '</div>'
+      + '</div>';
+    const s = document.createElement('style');
+    s.textContent = '.sw-dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.3);animation:swPulse 1.3s ease-in-out infinite}.sw-dot:nth-child(2){animation-delay:.22s}.sw-dot:nth-child(3){animation-delay:.44s}@keyframes swPulse{0%,80%,100%{transform:scale(1);opacity:.3}40%{transform:scale(1.35);opacity:1}}';
+    document.head.appendChild(s);
+    document.body.appendChild(lo);
+  }
+  lo.style.opacity = '1';
+  lo.style.display = 'flex';
+  document.getElementById('sw-load-error').style.display = 'none';
+  document.getElementById('sw-load-dots').style.display  = 'flex';
+  document.getElementById('sw-load-msg').textContent     = 'Syncing data...';
+}
+
+function hideLoadingScreen() {
+  const lo = document.getElementById('sw-loading');
+  if (!lo) return;
+  lo.style.opacity = '0';
+  setTimeout(() => { lo.style.display = 'none'; }, 370);
+}
+
+function showSyncError(msg) {
+  const e = document.getElementById('sw-load-error');
+  const m = document.getElementById('sw-load-err-msg');
+  const d = document.getElementById('sw-load-dots');
+  const t = document.getElementById('sw-load-msg');
+  if (e) e.style.display = 'block';
+  if (d) d.style.display = 'none';
+  if (m) m.textContent   = msg || 'Could not reach Google Sheets.';
+  if (t) t.textContent   = 'Sync failed';
+}
+
+window._syncToken = null;
+function retryCloudSync() {
+  document.getElementById('sw-load-error').style.display = 'none';
+  document.getElementById('sw-load-dots').style.display  = 'flex';
+  document.getElementById('sw-load-msg').textContent     = 'Retrying...';
+  runCloudSync(window._syncToken);
+}
+
+function runCloudSync(token) {
+  window._syncToken = token;
+  loadFromCloudBlocking(token, function(ok, count, err) {
+    if (ok) {
+      renderAllTabs();
+      hideLoadingScreen();
+      showCloudStatus('online', count);
+    } else {
+      showSyncError(err || 'Could not connect to Google Sheets. Check your connection and try again.');
+    }
+  });
+}
+
 function showApp() {
   document.getElementById('login-page').classList.add('hidden');
-  const sess = getSession();
-  setTimeout(() => loadFromCloud(sess ? sess.token : null), 400);
   if (currentUser) {
     const av    = document.querySelector('.sb-avatar');
     const uname = document.querySelector('.sb-uname');
@@ -2959,7 +3012,85 @@ function showApp() {
     if (uname) uname.textContent = currentUser.name;
     if (urole) urole.textContent = currentUser.role;
   }
+  document.getElementById('app-wrap').style.display = 'flex';
+  const sess  = getSession();
+  const token = sess ? sess.token : null;
+  showLoadingScreen();
+  runCloudSync(token);
+}
+
+function renderAllTabs() {
   renderDashboard();
+  renderInvoiceTable();
+  renderFamilies();
+  renderClasses();
+  renderItemsLib();
+  renderRecurring();
+  if (typeof renderRevenueTable === 'function') renderRevenueTable();
+  loadSettings();
+  if (typeof updateQueueBadge === 'function') updateQueueBadge();
+}
+
+// Blocking cloud load — fetches everything, writes to memory + localStorage, calls callback(ok, count, err)
+function loadFromCloudBlocking(token, callback) {
+  if (!token) { const sess = getSession(); token = sess ? sess.token : null; }
+  const url = getScriptUrl();
+
+  if (typeof google !== 'undefined' && google.script) {
+    google.script.run
+      .withSuccessHandler(function(data) {
+        if (data && data.ok) { callback(true, applyCloudData(data.data || data)); }
+        else                  { callback(false, 0, (data && data.error) || 'No data returned'); }
+      })
+      .withFailureHandler(function(e) { callback(false, 0, e.message || String(e)); })
+      .serverGetAll(token);
+    return;
+  }
+
+  if (!url)   { callback(false, 0, 'No Google Sheets URL configured. Go to Settings to add one.'); return; }
+  if (!token) { callback(false, 0, 'Not authenticated'); return; }
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', url + '?action=getAll&token=' + encodeURIComponent(token), true);
+  xhr.timeout = 25000;
+  xhr.onload = function() {
+    try {
+      const j = JSON.parse(xhr.responseText);
+      if (j && j.ok && j.data) { callback(true, applyCloudData(j.data)); }
+      else                      { callback(false, 0, (j && j.error) || 'No data returned from server'); }
+    } catch(e) { callback(false, 0, 'Server response error — ' + e.message); }
+  };
+  xhr.onerror  = function() { callback(false, 0, 'Network error — check your internet connection'); };
+  xhr.ontimeout = function() { callback(false, 0, 'Request timed out — server may be slow, try again'); };
+  xhr.send();
+}
+
+// Write cloud data into memory variables + localStorage. Returns count of keys loaded.
+function applyCloudData(d) {
+  const map = {
+    'sw_families':  function(v){ FAMILIES  = v; },
+    'sw_invoices':  function(v){ INVOICES  = v; },
+    'sw_classes':   function(v){ CLASSES   = v; },
+    'sw_items':     function(v){ ITEMS_LIB = v; },
+    'sw_recurring': function(v){ RECURRING = v; },
+    'sw_item_cats': function(v){ ITEM_CATS = v; },
+    'sw_programs':  function(v){ PROGRAMS  = v; }
+  };
+  let count = 0;
+  Object.keys(map).forEach(function(k) {
+    if (d[k] !== undefined && d[k] !== null) {
+      try {
+        const val = Array.isArray(d[k]) ? d[k] : (typeof d[k] === 'string' ? JSON.parse(d[k]) : d[k]);
+        map[k](val);
+        localStorage.setItem(k, JSON.stringify(val));
+        count++;
+      } catch(e) { console.warn('applyCloudData:', k, e); }
+    }
+  });
+  if (d['sw_users']) {
+    try { localStorage.setItem('sw_users', JSON.stringify(d['sw_users'])); USERS = loadUsers(); } catch(e) {}
+  }
+  return count;
 }
 
 function doLogout() {
