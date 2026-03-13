@@ -1193,6 +1193,12 @@ const LS = {
   set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} }
 };
 
+// save() = localStorage + Google Sheets. Use this for ALL data changes.
+function save(key, data) {
+  LS.set(key, data);
+  syncToSheets(key, data);
+}
+
 let currentUser = null;
 
 // ── SYNC ──────────────────────────────────────────────
@@ -1203,30 +1209,66 @@ async function syncToSheets(key,data){
   clearTimeout(syncTimer);
   syncTimer=setTimeout(flushSyncQueue, 1200);
 }
-async function flushSyncQueue(){
+function flushSyncQueue(){
   if(!Object.keys(syncQueue).length)return;
   const keys={...syncQueue};syncQueue={};
   const sess=getSession();
   const token=sess?sess.token:null;
-  // Use google.script.run if served from Apps Script
+
+  // google.script.run path
   if(typeof google!=='undefined'&&google.script){
     google.script.run
-      .withSuccessHandler(function(){console.log('Synced to Sheets');})
-      .withFailureHandler(function(e){console.error('Sync failed:',e);})
+      .withSuccessHandler(function(r){ if(!r||!r.ok) showSyncBadge('error'); else showSyncBadge('ok'); })
+      .withFailureHandler(function(e){ console.error('Sync failed:',e); showSyncBadge('error'); Object.assign(syncQueue,keys); })
       .serverSyncAll(keys,token);
     return;
   }
-  // XHR fallback
-  const url=getScriptUrl();if(!url||!token)return;
-  try{
-    const xhr=new XMLHttpRequest();
-    xhr.open('POST',url,true);
-    xhr.setRequestHeader('Content-Type','text/plain;charset=utf-8');
-    xhr.withCredentials=false;
-    xhr.onload=function(){ console.log('Sync response:',xhr.status,xhr.responseText.slice(0,100)); };
-    xhr.onerror=function(){ console.error('Sync failed'); };
-    xhr.send(JSON.stringify({action:'syncAll',keys,token}));
-  }catch(e){ console.error('Sync error:',e); }
+
+  // XHR path
+  const url=getScriptUrl();
+  if(!url){ console.warn('No GAS URL — data saved locally only'); showSyncBadge('nourl'); return; }
+  if(!token){ console.warn('No token'); return; }
+  const xhr=new XMLHttpRequest();
+  xhr.open('POST',url,true);
+  xhr.setRequestHeader('Content-Type','text/plain;charset=utf-8');
+  xhr.withCredentials=false;
+  xhr.timeout=15000;
+  xhr.onload=function(){
+    try{
+      const r=JSON.parse(xhr.responseText);
+      if(r&&r.ok){ showSyncBadge('ok'); }
+      else{ console.error('Sync error:',r); showSyncBadge('error'); Object.assign(syncQueue,keys); }
+    }catch(e){ showSyncBadge('error'); Object.assign(syncQueue,keys); }
+  };
+  xhr.onerror=xhr.ontimeout=function(){ console.error('Sync network error'); showSyncBadge('error'); Object.assign(syncQueue,keys); };
+  xhr.send(JSON.stringify({action:'syncAll',keys,token}));
+}
+
+// Tiny visual indicator in the topbar so you know saves are hitting the sheet
+let _syncBadgeTimer=null;
+function showSyncBadge(state){
+  let badge=document.getElementById('sync-badge');
+  if(!badge){
+    badge=document.createElement('div');
+    badge.id='sync-badge';
+    badge.style.cssText='font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;transition:opacity .3s;position:fixed;bottom:14px;right:14px;z-index:9000';
+    document.body.appendChild(badge);
+  }
+  clearTimeout(_syncBadgeTimer);
+  if(state==='ok'){
+    badge.style.cssText='font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;transition:opacity .3s;position:fixed;bottom:14px;right:14px;z-index:9000;background:#059669;color:#fff;opacity:1';
+    badge.textContent='✓ Saved to cloud';
+    _syncBadgeTimer=setTimeout(()=>{ badge.style.opacity='0'; },2500);
+  } else if(state==='error'){
+    badge.style.cssText='font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;transition:opacity .3s;position:fixed;bottom:14px;right:14px;z-index:9000;background:#dc2626;color:#fff;opacity:1';
+    badge.textContent='⚠ Cloud sync failed — will retry';
+    // Retry after 5s
+    _syncBadgeTimer=setTimeout(()=>{ if(Object.keys(syncQueue).length)flushSyncQueue(); badge.style.opacity='0'; },5000);
+  } else if(state==='nourl'){
+    badge.style.cssText='font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;transition:opacity .3s;position:fixed;bottom:14px;right:14px;z-index:9000;background:#d97706;color:#fff;opacity:1';
+    badge.textContent='⚠ No sheet URL — local only';
+    _syncBadgeTimer=setTimeout(()=>{ badge.style.opacity='0'; },4000);
+  }
 }
 
 // Load ALL data from Google Drive on startup — overwrites localStorage with cloud data
@@ -1662,7 +1704,7 @@ async function bulkSend(){
     document.getElementById('send-overlay-progress').textContent=`${i+1} of ${checked.length}`;
     await new Promise(r=>setTimeout(r,3200));
     INVOICES=INVOICES.map(x=>x.id===checked[i]?{...x,emailSent:true}:x);
-    LS.set('sw_invoices',INVOICES);
+    save('sw_invoices',INVOICES);
   }
   overlay.classList.remove('open');
   toast(`✅ ${checked.length} invoice${checked.length>1?'s':''}  sent!`);
@@ -1690,7 +1732,7 @@ function sendSingleEmail(id){
       const res=JSON.parse(xhr.responseText);
       if(res.ok){
         INVOICES=INVOICES.map(i=>i.id===id?{...i,emailSent:true}:i);
-        LS.set('sw_invoices',INVOICES);
+        save('sw_invoices',INVOICES);
         syncToSheets('sw_invoices',INVOICES);
         toast('✅ '+inv.num+' sent to '+inv.email);
         renderInvoiceTable();renderSendQueue();updateQueueBadge();
@@ -1814,13 +1856,13 @@ function renderCatsList(){
 function addCategory(){
   const val=document.getElementById('new-cat-input').value.trim().toLowerCase().replace(/\s+/g,'-');
   if(!val||ITEM_CATS.includes(val)){toast('⚠️ Invalid or duplicate category');return;}
-  ITEM_CATS.push(val);LS.set('sw_item_cats',ITEM_CATS);
+  ITEM_CATS.push(val);save('sw_item_cats',ITEM_CATS);
   document.getElementById('new-cat-input').value='';
   renderCatsList();toast('✅ Category added!');
 }
 function removeCategory(cat){
   if(ITEMS_LIB.some(i=>i.cat===cat)){toast('⚠️ Items still using this category');return;}
-  ITEM_CATS=ITEM_CATS.filter(c=>c!==cat);LS.set('sw_item_cats',ITEM_CATS);renderCatsList();toast('Removed');
+  ITEM_CATS=ITEM_CATS.filter(c=>c!==cat);save('sw_item_cats',ITEM_CATS);renderCatsList();toast('Removed');
 }
 
 // ── RECURRING ─────────────────────────────────────────
@@ -1856,13 +1898,13 @@ function checkAutoSend(){
   const toRun=RECURRING.filter(r=>r.active&&r.day===todayDay&&(!r.lastRun||r.lastRun.slice(0,7)!==TODAY.slice(0,7)));
   toRun.forEach(r=>generateFromRecurring(r.id,true));
 }
-function toggleRecurring(id){RECURRING=RECURRING.map(r=>r.id===id?{...r,active:!r.active}:r);LS.set('sw_recurring',RECURRING);renderRecurring();}
-function deleteRecurring(id){if(!confirm('Remove this plan?'))return;RECURRING=RECURRING.filter(r=>r.id!==id);LS.set('sw_recurring',RECURRING);renderRecurring();}
+function toggleRecurring(id){RECURRING=RECURRING.map(r=>r.id===id?{...r,active:!r.active}:r);save('sw_recurring',RECURRING);renderRecurring();}
+function deleteRecurring(id){if(!confirm('Remove this plan?'))return;RECURRING=RECURRING.filter(r=>r.id!==id);save('sw_recurring',RECURRING);renderRecurring();}
 function generateFromRecurring(id,auto=false){
   const r=RECURRING.find(x=>x.id===id);if(!r)return;
   const inv={id:uid(),num:nextInvNum(),familyId:r.familyId,familyName:r.familyName,email:r.email,studentId:r.studentId,studentName:r.studentName,program:r.program,issueDate:TODAY,dueDate:new Date(new Date().setDate(new Date().getDate()+14)).toISOString().slice(0,10),items:r.items.map(i=>({desc:i.desc,qty:1,rate:Number(i.rate),disc:Number(i.rate)<0})),notes:'Auto-generated.',status:'unpaid',emailSent:false,payMethod:'',payRef:'',payDate:'',payNotes:''};
   INVOICES.push(inv);RECURRING=RECURRING.map(x=>x.id===id?{...x,lastRun:TODAY}:x);
-  LS.set('sw_invoices',INVOICES);LS.set('sw_recurring',RECURRING);
+  save('sw_invoices',INVOICES);save('sw_recurring',RECURRING);
   if(!auto){renderRecurring();renderDashboard();renderSendQueue();toast(`✅ ${inv.num} created for ${r.familyName}!`);}
 }
 
@@ -2077,7 +2119,7 @@ function saveInvoice(sendEmail){
   };
   if(editId)INVOICES=INVOICES.map(i=>i.id===editId?inv:i);else INVOICES.push(inv);
   lineItems.forEach(li=>{const m=ITEMS_LIB.find(x=>x.name===li.desc);if(m)m.usedCount=(m.usedCount||0)+1;});
-  LS.set('sw_invoices',INVOICES);LS.set('sw_items',ITEMS_LIB);
+  save('sw_invoices',INVOICES);save('sw_items',ITEMS_LIB);
   closeModal('modal-invoice');
   renderDashboard();renderInvoiceTable();updateQueueBadge();
   if(sendEmail){
@@ -2086,7 +2128,7 @@ function saveInvoice(sendEmail){
     toast(`✅ ${inv.num} saved${sendEmail?'':' — go to Ready to Send queue to email it'}!`);
   }
 }
-function deleteInvoice(id){if(!confirm('Delete this invoice?'))return;INVOICES=INVOICES.filter(i=>i.id!==id);LS.set('sw_invoices',INVOICES);renderInvoiceTable();renderDashboard();updateQueueBadge();toast('🗑 Deleted');}
+function deleteInvoice(id){if(!confirm('Delete this invoice?'))return;INVOICES=INVOICES.filter(i=>i.id!==id);save('sw_invoices',INVOICES);renderInvoiceTable();renderDashboard();updateQueueBadge();toast('🗑 Deleted');}
 
 // ── QUICK INVOICE ─────────────────────────────────────
 let qiSelectedItems=[],qiFamilyId='',taQiFamily=null,taQiStudent=null;
@@ -2126,7 +2168,7 @@ function saveQuickInvoice(sendEmail){
   const stuName=stuInput?stuInput.value:'';
   const stu=f?f.students.find(s=>s.name===stuName):null;
   const inv={id:uid(),num:nextInvNum(),familyId:qiFamilyId,familyName:f?f.lastName:'',email:pp.email,studentId:stu?stu.id:'',studentName:stuName,program:stu?stu.program:'',issueDate:document.getElementById('qi-issue').value||TODAY,dueDate:document.getElementById('qi-due').value||'',items:qiSelectedItems.map(i=>({desc:i.name,qty:1,rate:i.rate,disc:false})),notes:document.getElementById('qi-notes').value,status:'unpaid',emailSent:sendEmail,payMethod:'',payRef:'',payDate:'',payNotes:''};
-  INVOICES.push(inv);LS.set('sw_invoices',INVOICES);
+  INVOICES.push(inv);save('sw_invoices',INVOICES);
   closeModal('modal-quick');renderDashboard();renderInvoiceTable();updateQueueBadge();
   if(sendEmail)setTimeout(()=>sendSingleEmail(inv.id),200);
   else toast(`✅ ${inv.num} saved — go to Ready to Send to email it`);
@@ -2164,7 +2206,7 @@ function confirmPayment(){
   const payMethod=pm?pm.dataset.pm:'ClassWallet';
   if(payMethod==='ClassWallet'&&!document.getElementById('paid-ref').value.trim()){toast('⚠️ Enter the ClassWallet auth/reference #');return;}
   INVOICES=INVOICES.map(i=>i.id===id?{...i,status:'paid',payMethod,payRef:document.getElementById('paid-ref').value,payDate:document.getElementById('paid-date').value,payNotes:document.getElementById('paid-notes').value}:i);
-  LS.set('sw_invoices',INVOICES);
+  save('sw_invoices',INVOICES);
   closeModal('modal-paid');renderDashboard();renderInvoiceTable();
   toast('✅ Payment recorded — '+payMethod);
 }
@@ -2317,11 +2359,11 @@ function saveFamily(){
   };
   if(editId)FAMILIES=FAMILIES.map(f=>f.id===editId?fam:f);else FAMILIES.push(fam);
   fam.students.forEach(s=>{CLASSES.forEach(c=>{const should=(s.classIds||[]).includes(c.id)&&isStudentActive(s);const has=c.enrolledIds.includes(s.id);if(should&&!has)c.enrolledIds.push(s.id);else if(!should&&has)c.enrolledIds=c.enrolledIds.filter(x=>x!==s.id);});});
-  LS.set('sw_families',FAMILIES);LS.set('sw_classes',CLASSES);
+  save('sw_families',FAMILIES);save('sw_classes',CLASSES);
   closeModal('modal-family');renderFamilies();renderClasses();
   toast('✅ '+fam.lastName+' Family saved!');
 }
-function deleteFamily(id){if(!confirm('Remove this family and all their data?'))return;FAMILIES=FAMILIES.filter(f=>f.id!==id);localStorage.setItem('sw_families',JSON.stringify(FAMILIES));flushSyncQueue.cancel&&flushSyncQueue.cancel();syncToSheets('sw_families',FAMILIES);renderFamilies();toast('🗑 Family removed');}
+function deleteFamily(id){if(!confirm('Remove this family and all their data?'))return;FAMILIES=FAMILIES.filter(f=>f.id!==id);save('sw_families',FAMILIES);flushSyncQueue.cancel&&flushSyncQueue.cancel();syncToSheets('sw_families',FAMILIES);renderFamilies();toast('🗑 Family removed');}
 
 // ── FAMILY HISTORY ────────────────────────────────────
 // goToFamily — universal nav: close any open modal, jump to Families tab, open family profile
@@ -2374,7 +2416,7 @@ function openFamilyHistory(fid){
 // ── CLASS MODAL ───────────────────────────────────────
 function openAddClass(){document.getElementById('class-edit-id').value='';document.getElementById('class-modal-title').textContent='New Class';['class-name','class-instructor','class-desc','class-days'].forEach(id=>document.getElementById(id).value='');document.getElementById('class-cost').value='';document.getElementById('class-billing').value='recurring';document.getElementById('class-capacity').value='';document.getElementById('class-time-start').value='';document.getElementById('class-time-end').value='';openModal('modal-class');}
 function openEditClass(id){const c=CLASSES.find(x=>x.id===id);if(!c)return;document.getElementById('class-edit-id').value=id;document.getElementById('class-modal-title').textContent='Edit Class';document.getElementById('class-name').value=c.name;document.getElementById('class-instructor').value=c.instructor||'';document.getElementById('class-desc').value=c.description||'';document.getElementById('class-cost').value=c.cost||'';document.getElementById('class-billing').value=c.billing||'recurring';document.getElementById('class-capacity').value=c.capacity||'';document.getElementById('class-days').value=c.days||'';document.getElementById('class-time-start').value=c.timeStart||'';document.getElementById('class-time-end').value=c.timeEnd||'';openModal('modal-class');}
-function saveClass(){const name=document.getElementById('class-name').value.trim();if(!name){toast('⚠️ Name required');return;}const editId=document.getElementById('class-edit-id').value;const existing=editId?CLASSES.find(c=>c.id===editId):null;const cls={id:editId||uid(),name,instructor:document.getElementById('class-instructor').value,description:document.getElementById('class-desc').value,cost:parseFloat(document.getElementById('class-cost').value)||0,billing:document.getElementById('class-billing').value,capacity:parseInt(document.getElementById('class-capacity').value)||0,days:document.getElementById('class-days').value,timeStart:document.getElementById('class-time-start').value,timeEnd:document.getElementById('class-time-end').value,enrolledIds:existing?existing.enrolledIds:[],waitlist:existing?existing.waitlist:[]};if(editId)CLASSES=CLASSES.map(c=>c.id===editId?cls:c);else CLASSES.push(cls);LS.set('sw_classes',CLASSES);closeModal('modal-class');renderClasses();toast('✅ '+name+' saved!');}
+function saveClass(){const name=document.getElementById('class-name').value.trim();if(!name){toast('⚠️ Name required');return;}const editId=document.getElementById('class-edit-id').value;const existing=editId?CLASSES.find(c=>c.id===editId):null;const cls={id:editId||uid(),name,instructor:document.getElementById('class-instructor').value,description:document.getElementById('class-desc').value,cost:parseFloat(document.getElementById('class-cost').value)||0,billing:document.getElementById('class-billing').value,capacity:parseInt(document.getElementById('class-capacity').value)||0,days:document.getElementById('class-days').value,timeStart:document.getElementById('class-time-start').value,timeEnd:document.getElementById('class-time-end').value,enrolledIds:existing?existing.enrolledIds:[],waitlist:existing?existing.waitlist:[]};if(editId)CLASSES=CLASSES.map(c=>c.id===editId?cls:c);else CLASSES.push(cls);save('sw_classes',CLASSES);closeModal('modal-class');renderClasses();toast('✅ '+name+' saved!');}
 
 function deleteClass(id){
   const c=CLASSES.find(x=>x.id===id);if(!c)return;
@@ -2386,8 +2428,8 @@ function deleteClass(id){
   // Remove class from any student's classIds
   FAMILIES.forEach(f=>f.students.forEach(s=>{s.classIds=(s.classIds||[]).filter(cid=>cid!==id);}));
   CLASSES=CLASSES.filter(x=>x.id!==id);
-  LS.set('sw_classes',CLASSES);
-  LS.set('sw_families',FAMILIES);
+  save('sw_classes',CLASSES);
+  save('sw_families',FAMILIES);
   syncToSheets('sw_classes',CLASSES);
   closeModal('modal-class-detail');
   renderClasses();
@@ -2434,19 +2476,19 @@ function openClassDetail(id){
   document.getElementById('cd-invoice-btn').onclick=()=>{closeModal('modal-class-detail');invoiceWholeClass(c.id);};
   openModal('modal-class-detail');
 }
-function addStudentToClass(cid){const sid=document.getElementById('add-to-class-sel').value;if(!sid)return;const c=CLASSES.find(x=>x.id===cid);if(!c||c.enrolledIds.includes(sid))return;c.enrolledIds.push(sid);LS.set('sw_classes',CLASSES);closeModal('modal-class-detail');openClassDetail(cid);toast('✅ Student added!');}
-function addToWaitlist(cid){const sid=document.getElementById('add-to-class-sel').value;if(!sid)return;const c=CLASSES.find(x=>x.id===cid);if(!c)return;if(!c.waitlist)c.waitlist=[];if(!c.waitlist.includes(sid))c.waitlist.push(sid);LS.set('sw_classes',CLASSES);closeModal('modal-class-detail');openClassDetail(cid);toast('📋 Added to waitlist');}
-function removeFromClass(cid,sid){const c=CLASSES.find(x=>x.id===cid);if(!c)return;c.enrolledIds=c.enrolledIds.filter(x=>x!==sid);LS.set('sw_classes',CLASSES);closeModal('modal-class-detail');openClassDetail(cid);}
-function removeFromWaitlist(cid,sid){const c=CLASSES.find(x=>x.id===cid);if(!c)return;c.waitlist=(c.waitlist||[]).filter(x=>x!==sid);LS.set('sw_classes',CLASSES);closeModal('modal-class-detail');openClassDetail(cid);}
-function promoteFromWaitlist(cid,sid){const c=CLASSES.find(x=>x.id===cid);if(!c)return;c.waitlist=(c.waitlist||[]).filter(x=>x!==sid);if(!c.enrolledIds.includes(sid))c.enrolledIds.push(sid);LS.set('sw_classes',CLASSES);closeModal('modal-class-detail');openClassDetail(cid);toast('✅ Student enrolled!');}
-function invoiceWholeClass(cid){const c=CLASSES.find(x=>x.id===cid);if(!c)return;const allStudents=getAllStudents();let created=0;c.enrolledIds.forEach(sid=>{const s=allStudents.find(x=>x.id===sid);if(!s||!isStudentActive(s))return;const inv={id:uid(),num:nextInvNum(),familyId:s.familyId,familyName:s.familyName,email:getPrimaryParent(s.familyObj).email,studentId:sid,studentName:s.name,program:c.name,issueDate:TODAY,dueDate:new Date(new Date().setDate(new Date().getDate()+14)).toISOString().slice(0,10),items:[{desc:c.name+' Tuition',qty:1,rate:c.cost,disc:false}],notes:'',status:'unpaid',emailSent:false,payMethod:'',payRef:'',payDate:'',payNotes:''};INVOICES.push(inv);created++;});LS.set('sw_invoices',INVOICES);renderDashboard();updateQueueBadge();toast(`✅ ${created} invoices created!`);}
+function addStudentToClass(cid){const sid=document.getElementById('add-to-class-sel').value;if(!sid)return;const c=CLASSES.find(x=>x.id===cid);if(!c||c.enrolledIds.includes(sid))return;c.enrolledIds.push(sid);save('sw_classes',CLASSES);closeModal('modal-class-detail');openClassDetail(cid);toast('✅ Student added!');}
+function addToWaitlist(cid){const sid=document.getElementById('add-to-class-sel').value;if(!sid)return;const c=CLASSES.find(x=>x.id===cid);if(!c)return;if(!c.waitlist)c.waitlist=[];if(!c.waitlist.includes(sid))c.waitlist.push(sid);save('sw_classes',CLASSES);closeModal('modal-class-detail');openClassDetail(cid);toast('📋 Added to waitlist');}
+function removeFromClass(cid,sid){const c=CLASSES.find(x=>x.id===cid);if(!c)return;c.enrolledIds=c.enrolledIds.filter(x=>x!==sid);save('sw_classes',CLASSES);closeModal('modal-class-detail');openClassDetail(cid);}
+function removeFromWaitlist(cid,sid){const c=CLASSES.find(x=>x.id===cid);if(!c)return;c.waitlist=(c.waitlist||[]).filter(x=>x!==sid);save('sw_classes',CLASSES);closeModal('modal-class-detail');openClassDetail(cid);}
+function promoteFromWaitlist(cid,sid){const c=CLASSES.find(x=>x.id===cid);if(!c)return;c.waitlist=(c.waitlist||[]).filter(x=>x!==sid);if(!c.enrolledIds.includes(sid))c.enrolledIds.push(sid);save('sw_classes',CLASSES);closeModal('modal-class-detail');openClassDetail(cid);toast('✅ Student enrolled!');}
+function invoiceWholeClass(cid){const c=CLASSES.find(x=>x.id===cid);if(!c)return;const allStudents=getAllStudents();let created=0;c.enrolledIds.forEach(sid=>{const s=allStudents.find(x=>x.id===sid);if(!s||!isStudentActive(s))return;const inv={id:uid(),num:nextInvNum(),familyId:s.familyId,familyName:s.familyName,email:getPrimaryParent(s.familyObj).email,studentId:sid,studentName:s.name,program:c.name,issueDate:TODAY,dueDate:new Date(new Date().setDate(new Date().getDate()+14)).toISOString().slice(0,10),items:[{desc:c.name+' Tuition',qty:1,rate:c.cost,disc:false}],notes:'',status:'unpaid',emailSent:false,payMethod:'',payRef:'',payDate:'',payNotes:''};INVOICES.push(inv);created++;});save('sw_invoices',INVOICES);renderDashboard();updateQueueBadge();toast(`✅ ${created} invoices created!`);}
 
 // ── ITEMS MODAL ───────────────────────────────────────
 function populateItemCatSel(){const sel=document.getElementById('item-cat-sel');if(!sel)return;sel.innerHTML=ITEM_CATS.map(c=>`<option value="${c}">${catLabel(c)}</option>`).join('');}
 function openAddItem(){document.getElementById('item-edit-id').value='';document.getElementById('item-modal-title').textContent='New Item';['item-name','item-desc','item-rate'].forEach(id=>document.getElementById(id).value='');populateItemCatSel();openModal('modal-item');}
 function editItem(id){const item=ITEMS_LIB.find(x=>x.id===id);if(!item)return;document.getElementById('item-edit-id').value=id;document.getElementById('item-modal-title').textContent='Edit Item';document.getElementById('item-name').value=item.name;document.getElementById('item-desc').value=item.desc||'';document.getElementById('item-rate').value=item.rate;populateItemCatSel();document.getElementById('item-cat-sel').value=item.cat;openModal('modal-item');}
-function deleteItem(id){if(!confirm('Delete this item?'))return;ITEMS_LIB=ITEMS_LIB.filter(x=>x.id!==id);LS.set('sw_items',ITEMS_LIB);renderItemsLib();toast('🗑 Deleted');}
-function saveItem(){const name=document.getElementById('item-name').value.trim();const rate=parseFloat(document.getElementById('item-rate').value)||0;if(!name){toast('⚠️ Name required');return;}const editId=document.getElementById('item-edit-id').value;const item={id:editId||uid(),name,desc:document.getElementById('item-desc').value,rate,cat:document.getElementById('item-cat-sel').value||'other',usedCount:editId?(ITEMS_LIB.find(x=>x.id===editId)||{}).usedCount||0:0};if(editId)ITEMS_LIB=ITEMS_LIB.map(x=>x.id===editId?item:x);else ITEMS_LIB.push(item);LS.set('sw_items',ITEMS_LIB);closeModal('modal-item');renderItemsLib();toast('✅ Item saved!');}
+function deleteItem(id){if(!confirm('Delete this item?'))return;ITEMS_LIB=ITEMS_LIB.filter(x=>x.id!==id);save('sw_items',ITEMS_LIB);renderItemsLib();toast('🗑 Deleted');}
+function saveItem(){const name=document.getElementById('item-name').value.trim();const rate=parseFloat(document.getElementById('item-rate').value)||0;if(!name){toast('⚠️ Name required');return;}const editId=document.getElementById('item-edit-id').value;const item={id:editId||uid(),name,desc:document.getElementById('item-desc').value,rate,cat:document.getElementById('item-cat-sel').value||'other',usedCount:editId?(ITEMS_LIB.find(x=>x.id===editId)||{}).usedCount||0:0};if(editId)ITEMS_LIB=ITEMS_LIB.map(x=>x.id===editId?item:x);else ITEMS_LIB.push(item);save('sw_items',ITEMS_LIB);closeModal('modal-item');renderItemsLib();toast('✅ Item saved!');}
 
 // ── RECURRING MODAL ───────────────────────────────────
 let recItems=[],taRecFamily=null,taRecStudent=null,taRecProgram=null,recFamilyId='';
@@ -2481,7 +2523,7 @@ function saveRecurring(){
   const stu=f?f.students.find(s=>s.name===stuName):null;
   const progInput=document.querySelector('#ta-rec-program-wrap .ta-input');
   const plan={id:uid(),familyId:recFamilyId,familyName:f?f.lastName:'',email:f?getPrimaryParent(f).email:'',studentId:stu?stu.id:'',studentName:stuName,program:progInput?progInput.value:'',day:document.getElementById('rec-day').value,items:recItems.map(i=>({desc:i.desc,rate:Number(i.rate)})),active:true,lastRun:''};
-  RECURRING.push(plan);LS.set('sw_recurring',RECURRING);closeModal('modal-recurring');renderRecurring();toast('✅ Recurring plan saved!');
+  RECURRING.push(plan);save('sw_recurring',RECURRING);closeModal('modal-recurring');renderRecurring();toast('✅ Recurring plan saved!');
 }
 
 // ── PDF ───────────────────────────────────────────────
@@ -2689,7 +2731,7 @@ function saveProgram(){
   } else {
     PROGRAMS.push({id:uid(),name,description:document.getElementById('program-desc').value});
   }
-  LS.set('sw_programs',PROGRAMS);
+  save('sw_programs',PROGRAMS);
   syncToSheets('sw_programs',PROGRAMS);
   closeModal('modal-program');
   renderProgramsList();
@@ -2704,7 +2746,7 @@ function deleteProgram(id){
     :`Delete program "${p.name}"?`;
   if(!confirm(msg))return;
   PROGRAMS=PROGRAMS.filter(x=>x.id!==id);
-  LS.set('sw_programs',PROGRAMS);
+  save('sw_programs',PROGRAMS);
   syncToSheets('sw_programs',PROGRAMS);
   renderProgramsList();
   toast('🗑 Program deleted');
@@ -2739,7 +2781,7 @@ checkAutoSend();
 
 function getScriptUrl() {
   return localStorage.getItem('sw_script_url') ||
-    'https://script.google.com/macros/s/AKfycby3YhR42FU2GyfjvmeJqcr1oOVUHY1RcC3i5K7llolrk_dPa0RpBe9_eCJ3fwsiatu8/exec';
+    'https://script.google.com/macros/s/AKfycbw66A-IMZvfNV2-7TQvwruLv27OYwiYS8GdO4tJoGLqRB4Q_lzTf3sTATl6tDv_vbbd/exec';
 }
 
 // Manual refresh — syncs latest data from Google Sheets then re-renders current tab
