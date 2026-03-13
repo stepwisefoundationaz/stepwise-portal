@@ -343,100 +343,8 @@ select.input{cursor:pointer}
 .logout-btn{background:none;border:1px solid rgba(255,255,255,.2);border-radius:6px;color:rgba(255,255,255,.6);font-size:10px;font-weight:600;padding:4px 10px;cursor:pointer;font-family:inherit;transition:all .15s}
 .logout-btn:hover{background:rgba(255,255,255,.1);color:#fff}
 
-::-webkit-scrollbar{width:4px;height:4px}/* ── LOGIN PAGE ── */
-.login-page{position:fixed;inset:0;background:linear-gradient(135deg,#0a1f3d 0%,#0f2d52 50%,#1a3f6f 100%);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px}
-.login-page.hidden{display:none}
-.login-card{background:#fff;border-radius:20px;width:100%;max-width:420px;box-shadow:0 32px 80px rgba(0,0,0,.35);overflow:hidden;animation:loginIn .3s cubic-bezier(.16,1,.3,1)}
-@keyframes loginIn{from{opacity:0;transform:translateY(24px) scale(.96)}to{opacity:1;transform:none}}
-.login-header{background:linear-gradient(135deg,#0f2d52,#1a3f6f);padding:32px 36px 28px;text-align:center}
-.login-logo{width:56px;height:56px;object-fit:contain;filter:brightness(0) invert(1);margin-bottom:14px}
-.login-brand{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:#fff;letter-spacing:-.4px}
-.login-brand-sub{font-size:11px;color:rgba(255,255,255,.45);letter-spacing:2px;text-transform:uppercase;margin-top:3px}
-.login-body{padding:32px 36px 28px}
-.login-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:17px;font-weight:800;color:#0f1923;margin-bottom:4px}
-.login-sub{font-size:12px;color:#8a96a8;margin-bottom:24px}
-.login-field{margin-bottom:16px}
-.login-label{display:block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:#8a96a8;margin-bottom:6px}
-.login-input-wrap{position:relative}
-.login-input{width:100%;background:#f6f8fa;border:1.5px solid #e4e8ef;border-radius:9px;padding:11px 42px 11px 14px;font-size:13px;font-family:'Inter',sans-serif;color:#0f1923;outline:none;transition:all .15s}
-.login-input:focus{border-color:#2563eb;background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.08)}
-.login-input.error{border-color:#dc2626;background:#fff8f8}
-.login-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#8a96a8;font-size:15px;padding:2px;transition:color .15s;line-height:1}
-.login-eye:hover{color:#0f1923}
-.login-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-.login-remember{display:flex;align-items:center;gap:7px;font-size:12px;color:#4a5568;cursor:pointer}
-.login-remember input{width:14px;height:14px;accent-color:#0f2d52;cursor:pointer}
-.login-forgot{font-size:12px;color:#2563eb;font-weight:600;cursor:pointer;text-decoration:none;background:none;border:none;font-family:inherit;padding:0}
-.login-forgot:hover{text-decoration:underline}
-.login-btn{width:100%;background:linear-gradient(135deg,#0f2d52,#1a3f6f);color:#fff;border:none;border-radius:9px;padding:12px;font-size:14px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;transition:all .15s;letter-spacing:-.2px}
-.login-btn:hover{background:linear-gradient(135deg,#1a3f6f,#2563eb);transform:translateY(-1px);box-shadow:0 6px 20px rgba(15,45,82,.3)}
-.login-btn:active{transform:translateY(0)}
-.login-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
-.login-error{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 13px;font-size:12px;color:#dc2626;font-weight:500;margin-bottom:16px;display:none}
-.login-error.show{display:block;animation:shake .3s ease}
-@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-.login-footer{padding:16px 36px;background:#f6f8fa;border-top:1px solid #e4e8ef;text-align:center;font-size:11px;color:#8a96a8}
-/* FORGOT PW PANEL */
-.forgot-panel{display:none;animation:loginIn .25s ease}
-.forgot-panel.show{display:block}
-.login-main-form.hidden{display:none}
-/* RESET PANEL */
-.reset-success{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:14px;text-align:center;display:none}
-.reset-success.show{display:block}
-.reset-icon{font-size:28px;margin-bottom:8px}
-.reset-msg{font-size:12px;color:#059669;font-weight:600}
-.reset-sub{font-size:11px;color:#6b7280;margin-top:4px}
-/* TOP RIGHT LOGOUT */
-.logout-btn{background:none;border:1px solid rgba(255,255,255,.2);border-radius:6px;color:rgba(255,255,255,.6);font-size:10px;font-weight:600;padding:4px 10px;cursor:pointer;font-family:inherit;transition:all .15s}
-.logout-btn:hover{background:rgba(255,255,255,.1);color:#fff}
-
-::-webkit-scrollbar-track{background:transparent}/* ── LOGIN PAGE ── */
-.login-page{position:fixed;inset:0;background:linear-gradient(135deg,#0a1f3d 0%,#0f2d52 50%,#1a3f6f 100%);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px}
-.login-page.hidden{display:none}
-.login-card{background:#fff;border-radius:20px;width:100%;max-width:420px;box-shadow:0 32px 80px rgba(0,0,0,.35);overflow:hidden;animation:loginIn .3s cubic-bezier(.16,1,.3,1)}
-@keyframes loginIn{from{opacity:0;transform:translateY(24px) scale(.96)}to{opacity:1;transform:none}}
-.login-header{background:linear-gradient(135deg,#0f2d52,#1a3f6f);padding:32px 36px 28px;text-align:center}
-.login-logo{width:56px;height:56px;object-fit:contain;filter:brightness(0) invert(1);margin-bottom:14px}
-.login-brand{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:#fff;letter-spacing:-.4px}
-.login-brand-sub{font-size:11px;color:rgba(255,255,255,.45);letter-spacing:2px;text-transform:uppercase;margin-top:3px}
-.login-body{padding:32px 36px 28px}
-.login-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:17px;font-weight:800;color:#0f1923;margin-bottom:4px}
-.login-sub{font-size:12px;color:#8a96a8;margin-bottom:24px}
-.login-field{margin-bottom:16px}
-.login-label{display:block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:#8a96a8;margin-bottom:6px}
-.login-input-wrap{position:relative}
-.login-input{width:100%;background:#f6f8fa;border:1.5px solid #e4e8ef;border-radius:9px;padding:11px 42px 11px 14px;font-size:13px;font-family:'Inter',sans-serif;color:#0f1923;outline:none;transition:all .15s}
-.login-input:focus{border-color:#2563eb;background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.08)}
-.login-input.error{border-color:#dc2626;background:#fff8f8}
-.login-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#8a96a8;font-size:15px;padding:2px;transition:color .15s;line-height:1}
-.login-eye:hover{color:#0f1923}
-.login-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-.login-remember{display:flex;align-items:center;gap:7px;font-size:12px;color:#4a5568;cursor:pointer}
-.login-remember input{width:14px;height:14px;accent-color:#0f2d52;cursor:pointer}
-.login-forgot{font-size:12px;color:#2563eb;font-weight:600;cursor:pointer;text-decoration:none;background:none;border:none;font-family:inherit;padding:0}
-.login-forgot:hover{text-decoration:underline}
-.login-btn{width:100%;background:linear-gradient(135deg,#0f2d52,#1a3f6f);color:#fff;border:none;border-radius:9px;padding:12px;font-size:14px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;transition:all .15s;letter-spacing:-.2px}
-.login-btn:hover{background:linear-gradient(135deg,#1a3f6f,#2563eb);transform:translateY(-1px);box-shadow:0 6px 20px rgba(15,45,82,.3)}
-.login-btn:active{transform:translateY(0)}
-.login-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
-.login-error{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 13px;font-size:12px;color:#dc2626;font-weight:500;margin-bottom:16px;display:none}
-.login-error.show{display:block;animation:shake .3s ease}
-@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-.login-footer{padding:16px 36px;background:#f6f8fa;border-top:1px solid #e4e8ef;text-align:center;font-size:11px;color:#8a96a8}
-/* FORGOT PW PANEL */
-.forgot-panel{display:none;animation:loginIn .25s ease}
-.forgot-panel.show{display:block}
-.login-main-form.hidden{display:none}
-/* RESET PANEL */
-.reset-success{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:14px;text-align:center;display:none}
-.reset-success.show{display:block}
-.reset-icon{font-size:28px;margin-bottom:8px}
-.reset-msg{font-size:12px;color:#059669;font-weight:600}
-.reset-sub{font-size:11px;color:#6b7280;margin-top:4px}
-/* TOP RIGHT LOGOUT */
-.logout-btn{background:none;border:1px solid rgba(255,255,255,.2);border-radius:6px;color:rgba(255,255,255,.6);font-size:10px;font-weight:600;padding:4px 10px;cursor:pointer;font-family:inherit;transition:all .15s}
-.logout-btn:hover{background:rgba(255,255,255,.1);color:#fff}
-
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:10px}
 
 .pay-method-row { flex-wrap: wrap !important; }
@@ -527,9 +435,7 @@ select.input{cursor:pointer}
 }
 
 /* Mobile nav hidden on desktop */
-#mobile-nav { display: none; };
-
-// Queue to batch sync calls and avoid hammering the API
+#mobile-nav { display: none; }
 </style>
 </head>
 <body>
@@ -633,8 +539,9 @@ select.input{cursor:pointer}
       </div>
       <div class="tb-right">
         <span class="tb-date" id="tb-date"></span>
+        <button class="btn btn-ghost btn-sm" onclick="refreshFromCloud()" title="Sync latest data from Google Sheets" style="font-size:11px">↻ Refresh</button>
         <div id="cloud-status-bar" style="display:none;align-items:center;background:var(--green-lt);border:1px solid #a7f3d0;border-radius:6px;padding:4px 10px;gap:6px;font-size:11px"></div>
-        <div class="connect-status" onclick="showTab('settings')">
+        <div class="connect-status" onclick="showTab('settings')" style="cursor:pointer">
           <div class="connect-dot" id="connect-dot"></div>
           <span id="connect-text" style="font-size:10px;color:var(--text3)">Not connected</span>
         </div>
@@ -702,26 +609,16 @@ select.input{cursor:pointer}
       <div class="card">
         <div class="card-hd" style="flex-wrap:wrap;gap:8px">
           <input class="input input-sm" id="inv-search" placeholder="Search invoices…" oninput="renderInvoiceTable()" style="min-width:180px"/>
-          <select class="input input-sm" id="inv-status-filter" onchange="renderInvoiceTable()">
+          <select class="input input-sm" id="inv-status-filter" onchange="currentFilter=this.value;renderInvoiceTable()">
             <option value="">All Status</option>
             <option value="unpaid">Unpaid</option>
             <option value="paid">Paid</option>
             <option value="overdue">Overdue</option>
-            <option value="draft">Draft</option>
           </select>
           <input type="date" class="input input-sm" id="inv-from" onchange="renderInvoiceTable()"/>
           <input type="date" class="input input-sm" id="inv-to" onchange="renderInvoiceTable()"/>
         </div>
-        <div class="table-wrap"><table id="inv-table"><thead><tr>
-          <th onclick="sortInvTable('num')" style="cursor:pointer">Invoice #</th>
-          <th onclick="sortInvTable('familyName')" style="cursor:pointer">Family</th>
-          <th class="hide-mobile">Student</th>
-          <th onclick="sortInvTable('issueDate')" style="cursor:pointer">Issued</th>
-          <th onclick="sortInvTable('dueDate')" style="cursor:pointer">Due</th>
-          <th onclick="sortInvTable('total')" style="cursor:pointer">Amount</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr></thead><tbody id="inv-tbody"></tbody></table></div>
+        <div class="table-wrap" id="inv-table-wrap"></div>
       </div>
     </div>
 
@@ -735,7 +632,7 @@ select.input{cursor:pointer}
     <div class="content" id="tab-families">
       <div class="page-hd">
         <div><div class="page-title">Families</div></div>
-        <button class="btn btn-primary btn-sm" onclick="openNewFamily()">＋ Add Family</button>
+        <button class="btn btn-primary btn-sm" onclick="openAddFamily()">＋ Add Family</button>
       </div>
       <div class="card">
         <div class="card-hd" style="gap:8px;flex-wrap:wrap">
@@ -754,7 +651,7 @@ select.input{cursor:pointer}
         <div><div class="page-title">Classes</div></div>
         <button class="btn btn-primary btn-sm" onclick="openAddClass()">＋ New Class</button>
       </div>
-      <div id="classes-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px"></div>
+      <div id="classes-wrap"></div>
     </div>
 
     <!-- TAB: ITEMS LIBRARY -->
@@ -763,10 +660,16 @@ select.input{cursor:pointer}
         <div><div class="page-title">Items Library</div></div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-ghost btn-sm" onclick="openManageCategories()">⚙ Categories</button>
-          <button class="btn btn-primary btn-sm" onclick="openNewItem()">＋ New Item</button>
+          <button class="btn btn-primary btn-sm" onclick="openAddItem()">＋ New Item</button>
         </div>
       </div>
-      <div id="items-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px"></div>
+      <div class="card">
+        <div class="card-hd" style="flex-wrap:wrap;gap:8px">
+          <input class="input input-sm" id="item-search" placeholder="Search items…" oninput="renderItemsLib()" style="min-width:180px"/>
+          <div style="display:flex;gap:4px;flex-wrap:wrap" id="item-cat-pills"></div>
+        </div>
+        <div style="padding:12px" id="items-lib-wrap"></div>
+      </div>
     </div>
 
     <!-- TAB: RECURRING -->
@@ -783,7 +686,32 @@ select.input{cursor:pointer}
       <div class="page-hd"><div><div class="page-title">Revenue</div></div>
         <button class="btn btn-ghost btn-sm" onclick="openExport()">↓ Export CSV</button>
       </div>
-      <div id="reports-content"></div>
+      <div id="dash-stats2" style="display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:16px" id="report-stats"></div>
+      <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:13px;margin-bottom:14px">
+        <div class="card"><div class="card-hd"><div class="card-title">Monthly Revenue</div></div><div class="chart-area"><div class="chart-bars" id="report-chart"></div></div></div>
+        <div class="card"><div class="card-hd"><div class="card-title">By Payment Method</div></div><div style="padding:3px 13px 13px" id="report-pay"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-hd" style="flex-wrap:wrap;gap:8px">
+          <input class="input input-sm" id="rev-search" placeholder="Search…" oninput="renderRevenueTable()" style="min-width:160px"/>
+          <input type="date" class="input input-sm" id="rev-from" onchange="renderRevenueTable()"/>
+          <input type="date" class="input input-sm" id="rev-to" onchange="renderRevenueTable()"/>
+          <select class="input input-sm" id="rev-pm-filter" onchange="renderRevenueTable()">
+            <option value="">All Methods</option>
+            <option value="ClassWallet">ClassWallet</option>
+            <option value="PayPal">PayPal</option>
+            <option value="Check">Check</option>
+            <option value="Cash">Cash</option>
+          </select>
+          <div style="display:flex;gap:3px">
+            <button class="pill active" id="rfc-all" onclick="setRevFilter('all')">All</button>
+            <button class="pill" id="rfc-paid" onclick="setRevFilter('paid')">Paid</button>
+            <button class="pill" id="rfc-unpaid" onclick="setRevFilter('unpaid')">Unpaid</button>
+          </div>
+        </div>
+        <div class="table-wrap" id="rev-table-wrap"></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 13px;font-size:11px;color:var(--text3);border-top:1px solid var(--border)" id="rev-table-foot"></div>
+      </div>
     </div>
 
     <!-- TAB: SETTINGS -->
@@ -849,10 +777,358 @@ select.input{cursor:pointer}
 </div><!-- /app-wrap -->
 
 <!-- MODALS CONTAINER -->
-<div id="modals"></div>
+<!-- SEND OVERLAY -->
+<div id="send-overlay" class="send-overlay">
+  <div class="send-box">
+    <div class="send-spinner"></div>
+    <div class="send-title" id="send-overlay-title">Sending invoice…</div>
+    <div class="send-sub" id="send-overlay-sub"></div>
+    <div class="send-progress" id="send-overlay-progress"></div>
+  </div>
+</div>
+
+<!-- MODAL: DRILL DOWN -->
+<div id="modal-drill" class="overlay">
+  <div class="modal modal-xl">
+    <div class="modal-hd">
+      <div><div class="modal-title" id="drill-title"></div><div class="modal-sub" id="drill-sub"></div></div>
+      <button class="modal-x" onclick="closeModal('modal-drill')">✕</button>
+    </div>
+    <div style="overflow:auto;max-height:72vh" id="drill-content"></div>
+    <div class="modal-ft" id="drill-footer"></div>
+  </div>
+</div>
+
+<!-- MODAL: INVOICE -->
+<div id="modal-invoice" class="overlay">
+  <div class="modal modal-lg">
+    <div class="modal-hd">
+      <div class="modal-title" id="inv-modal-title">New Invoice</div>
+      <button class="modal-x" onclick="closeModal('modal-invoice')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="inv-edit-id"/>
+      <div class="frow">
+        <div class="field"><label>Family <span class="req">*</span></label><div class="ta-wrap" id="ta-family-wrap"></div></div>
+        <div class="field"><label>Student</label><div class="ta-wrap" id="ta-student-wrap"></div></div>
+      </div>
+      <div class="frow">
+        <div class="field"><label>Program / Class</label><div class="ta-wrap" id="ta-program-wrap"></div></div>
+        <div class="field"><label>Billing Email</label><input class="input" id="inv-email" type="email" placeholder="Sent to…"/></div>
+      </div>
+      <div class="frow">
+        <div class="field"><label>Issue Date <span class="req">*</span></label><input class="input" id="inv-issue" type="date"/></div>
+        <div class="field"><label>Due Date <span class="req">*</span></label><input class="input" id="inv-due" type="date"/></div>
+      </div>
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span class="slabel">Line Items</span>
+          <div style="display:flex;gap:5px">
+            <button class="btn btn-xs btn-ghost" id="sib-toggle-btn" onclick="toggleSibDiscount()" style="display:none">🎁 Sibling Discount</button>
+            <button class="btn btn-xs btn-ghost" onclick="openItemLibPicker()">📦 Library</button>
+            <button class="btn btn-xs btn-ghost" onclick="addLineItem(false)">＋ Item</button>
+            <button class="btn btn-xs btn-warn" onclick="addLineItem(true)">＋ Discount</button>
+          </div>
+        </div>
+        <div class="items-tbl">
+          <div class="items-hd"><span>Description</span><span>Qty</span><span>Rate</span><span>Amount</span><span></span></div>
+          <div id="line-items-body"></div>
+        </div>
+        <div id="sib-discount-box" class="sib-box" style="display:none">
+          <div class="frow">
+            <div class="field"><label>Discount Type</label><select class="input" id="sib-type" onchange="updateSibDiscount()"><option value="percent">Percent %</option><option value="flat">Flat $</option></select></div>
+            <div class="field"><label>Amount</label><input class="input" id="sib-value" type="number" min="0" placeholder="10" oninput="updateSibDiscount()"/></div>
+          </div>
+        </div>
+        <div style="text-align:right;padding:8px 10px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:15px" id="inv-total-display">Total: $0.00</div>
+      </div>
+      <div class="field"><label>Notes</label><textarea class="input" id="inv-notes" style="min-height:50px;resize:vertical" placeholder="Internal notes…"></textarea></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeModal('modal-invoice')">Cancel</button>
+      <button class="btn btn-ghost" onclick="previewPDF()">👁 Preview PDF</button>
+      <button class="btn btn-teal" onclick="saveInvoice(false)">💾 Save</button>
+      <button class="btn btn-primary" onclick="saveInvoice(true)">📤 Save &amp; Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ITEM LIBRARY PICKER -->
+<div id="modal-lib-picker" class="overlay">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title">📦 Pick from Library</div><button class="modal-x" onclick="closeModal('modal-lib-picker')">✕</button></div>
+    <div style="padding:10px 16px;border-bottom:1px solid var(--border)"><input class="input" id="picker-search" placeholder="Search items…" oninput="renderPickerItems()"/></div>
+    <div style="padding:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:7px;max-height:60vh;overflow-y:auto" id="picker-items-grid"></div>
+    <div class="modal-ft"><button class="btn btn-ghost" onclick="closeModal('modal-lib-picker')">Close</button></div>
+  </div>
+</div>
+
+<!-- MODAL: QUICK INVOICE -->
+<div id="modal-quick" class="overlay">
+  <div class="modal modal-lg">
+    <div class="modal-hd"><div class="modal-title">⚡ Quick Invoice</div><button class="modal-x" onclick="closeModal('modal-quick')">✕</button></div>
+    <div class="modal-body">
+      <div class="frow">
+        <div class="field"><label>Family <span class="req">*</span></label><div class="ta-wrap" id="ta-qi-family-wrap"></div></div>
+        <div class="field"><label>Student</label><div class="ta-wrap" id="ta-qi-student-wrap"></div></div>
+      </div>
+      <div class="frow">
+        <div class="field"><label>Issue Date</label><input class="input" id="qi-issue" type="date"/></div>
+        <div class="field"><label>Due Date</label><input class="input" id="qi-due" type="date"/></div>
+      </div>
+      <div class="slabel" style="margin-bottom:6px">Pick Items</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;max-height:180px;overflow-y:auto;margin-bottom:10px" id="qi-lib-items"></div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;min-height:50px;margin-bottom:8px" id="qi-selected-items"></div>
+      <div style="text-align:right;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:14px;margin-bottom:10px" id="qi-total">Total: $0.00</div>
+      <div class="field"><label>Notes</label><input class="input" id="qi-notes" placeholder="Optional notes…"/></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeModal('modal-quick')">Cancel</button>
+      <button class="btn btn-teal" onclick="saveQuickInvoice(false)">💾 Save</button>
+      <button class="btn btn-primary" onclick="saveQuickInvoice(true)">📤 Save &amp; Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: MARK PAID -->
+<div id="modal-paid" class="overlay">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title">✅ Record Payment</div><button class="modal-x" onclick="closeModal('modal-paid')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="paid-inv-id"/>
+      <div style="background:var(--green-lt);border:1px solid #a7f3d0;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;font-weight:600;color:var(--green)" id="paid-sub"></div>
+      <div class="slabel" style="margin-bottom:8px">Payment Method</div>
+      <div class="pm-grid">
+        <div class="pm-card sel" data-pm="ClassWallet" onclick="selPM(this)"><div class="pm-em">🏫</div><div class="pm-lbl">ClassWallet</div></div>
+        <div class="pm-card" data-pm="PayPal" onclick="selPM(this)"><div class="pm-em">💙</div><div class="pm-lbl">PayPal</div></div>
+        <div class="pm-card" data-pm="Check" onclick="selPM(this)"><div class="pm-em">📝</div><div class="pm-lbl">Check</div></div>
+        <div class="pm-card" data-pm="Cash" onclick="selPM(this)"><div class="pm-em">💵</div><div class="pm-lbl">Cash</div></div>
+      </div>
+      <div id="cw-ref-wrap" style="margin-top:12px">
+        <div class="field"><label>ClassWallet Auth / Reference # <span class="req">*</span></label><input class="input" id="paid-ref" placeholder="e.g. CW-20260101-XXXX"/></div>
+      </div>
+      <div class="frow" style="margin-top:10px">
+        <div class="field"><label>Payment Date</label><input class="input" id="paid-date" type="date"/></div>
+        <div class="field"><label>Notes</label><input class="input" id="paid-notes" placeholder="Optional"/></div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeModal('modal-paid')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmPayment()">✅ Confirm Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: REMINDER -->
+<div id="modal-reminder" class="overlay">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title">📧 Send Reminder</div><button class="modal-x" onclick="closeModal('modal-reminder')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="rem-inv-id"/>
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px" id="rem-to"></div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:14px" id="rem-inv-info"></div>
+      <div class="field" style="margin-bottom:10px"><label>Tone</label>
+        <select class="input" id="rem-tone" onchange="updateReminderMsg()">
+          <option value="friendly">😊 Friendly</option>
+          <option value="firm">😐 Firm</option>
+          <option value="final">⚠️ Final Notice</option>
+        </select>
+      </div>
+      <div class="field"><label>Message Preview</label><textarea class="input" id="rem-msg" style="min-height:160px;resize:vertical;font-size:12px;line-height:1.5"></textarea></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeModal('modal-reminder')">Cancel</button>
+      <button class="btn btn-primary" onclick="sendReminder()">📤 Send Reminder</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: FAMILY -->
+<div id="modal-family" class="overlay">
+  <div class="modal modal-lg">
+    <div class="modal-hd">
+      <div class="modal-title" id="fam-modal-title">Add Family</div>
+      <button class="modal-x" onclick="closeModal('modal-family')">✕</button>
+    </div>
+    <div class="modal-tabs">
+      <div class="modal-tab active" id="ftab-family" onclick="switchFamTab('family')">🏠 Family</div>
+      <div class="modal-tab" id="ftab-parents" onclick="switchFamTab('parents')">👤 Parents</div>
+      <div class="modal-tab" id="ftab-students" onclick="switchFamTab('students')">🎓 Students</div>
+      <div class="modal-tab" id="ftab-safe" onclick="switchFamTab('safe')">🛡 Safe Persons</div>
+      <div class="modal-tab" id="ftab-emergency" onclick="switchFamTab('emergency')">🚨 Emergency</div>
+    </div>
+    <input type="hidden" id="fam-edit-id"/>
+    <div class="modal-tab-body active" id="ftab-body-family">
+      <div class="frow full"><div class="field"><label>Family Last Name <span class="req">*</span></label><input class="input" id="fam-lastname" placeholder="e.g. Smith"/></div></div>
+      <div class="slabel" style="margin-bottom:6px">Address</div>
+      <div class="frow full"><div class="field"><label>Street</label><input class="input" id="fam-addr-street" placeholder="123 Main St"/></div></div>
+      <div class="frow thirds">
+        <div class="field"><label>City</label><input class="input" id="fam-addr-city"/></div>
+        <div class="field"><label>State</label><input class="input" id="fam-addr-state" value="AZ"/></div>
+        <div class="field"><label>ZIP</label><input class="input" id="fam-addr-zip"/></div>
+      </div>
+      <div class="frow full"><div class="field"><label>Notes</label><textarea class="input" id="fam-notes" style="min-height:50px;resize:vertical" placeholder="Anything staff should know…"></textarea></div></div>
+    </div>
+    <div class="modal-tab-body" id="ftab-body-parents">
+      <div id="parents-list"></div>
+      <button class="btn btn-ghost btn-sm" onclick="addParentRow()" style="margin-top:8px">＋ Add Guardian</button>
+    </div>
+    <div class="modal-tab-body" id="ftab-body-students">
+      <div id="students-list"></div>
+      <button class="btn btn-ghost btn-sm" onclick="addStudentRow()" style="margin-top:8px">＋ Add Student</button>
+    </div>
+    <div class="modal-tab-body" id="ftab-body-safe">
+      <p style="font-size:11px;color:var(--text3);margin-bottom:10px">People authorized to pick up a student.</p>
+      <div id="safe-persons-list"></div>
+      <button class="btn btn-ghost btn-sm" onclick="addSafePersonRow()" style="margin-top:8px">＋ Add Safe Person</button>
+    </div>
+    <div class="modal-tab-body" id="ftab-body-emergency">
+      <div id="emergency-contacts-list"></div>
+      <button class="btn btn-ghost btn-sm" onclick="addEmergencyContact()" style="margin-top:8px">＋ Add Contact</button>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeModal('modal-family')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveFamily()">💾 Save Family</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: FAMILY HISTORY -->
+<div id="modal-history" class="overlay">
+  <div class="modal modal-lg">
+    <div class="modal-hd">
+      <div><div class="modal-title" id="fh-name"></div><div class="modal-sub" id="fh-sub"></div></div>
+      <button class="modal-x" onclick="closeModal('modal-history')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="mini-stats" id="fh-mini-stats"></div>
+      <div class="slabel" style="margin-bottom:8px">Invoice History</div>
+      <div id="fh-history-list"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeModal('modal-history')">Close</button>
+      <button class="btn btn-primary" id="fh-new-btn">＋ New Invoice</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CLASS ADD/EDIT -->
+<div id="modal-class" class="overlay">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title" id="class-modal-title">New Class</div><button class="modal-x" onclick="closeModal('modal-class')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="class-edit-id"/>
+      <div class="frow"><div class="field"><label>Class Name <span class="req">*</span></label><input class="input" id="class-name" placeholder="e.g. Foundation Program"/></div><div class="field"><label>Instructor</label><input class="input" id="class-instructor" placeholder="Coach name"/></div></div>
+      <div class="frow full"><div class="field"><label>Description</label><textarea class="input" id="class-desc" style="min-height:50px;resize:vertical"></textarea></div></div>
+      <div class="frow"><div class="field"><label>Monthly Cost ($)</label><input class="input" id="class-cost" type="number" step="0.01" placeholder="0.00"/></div><div class="field"><label>Billing Type</label><select class="input" id="class-billing"><option value="recurring">Monthly Recurring</option><option value="one-time">One-Time</option></select></div></div>
+      <div class="frow"><div class="field"><label>Capacity</label><input class="input" id="class-capacity" type="number" placeholder="Max students"/></div><div class="field"><label>Days</label><input class="input" id="class-days" placeholder="e.g. Mon / Wed / Fri"/></div></div>
+      <div class="frow"><div class="field"><label>Start Time</label><input class="input" id="class-time-start" type="time"/></div><div class="field"><label>End Time</label><input class="input" id="class-time-end" type="time"/></div></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-ghost" onclick="closeModal('modal-class')">Cancel</button><button class="btn btn-primary" onclick="saveClass()">💾 Save Class</button></div>
+  </div>
+</div>
+
+<!-- MODAL: CLASS DETAIL -->
+<div id="modal-class-detail" class="overlay">
+  <div class="modal modal-lg">
+    <div class="modal-hd">
+      <div><div class="modal-title" id="cd-name"></div><div class="modal-sub" id="cd-sub"></div></div>
+      <button class="modal-x" onclick="closeModal('modal-class-detail')">✕</button>
+    </div>
+    <div id="cd-body" style="overflow:auto;max-height:65vh"></div>
+    <div class="modal-ft">
+      <button class="btn btn-ghost" onclick="closeModal('modal-class-detail')">Close</button>
+      <button class="btn btn-ghost" id="cd-edit-btn">✏️ Edit Class</button>
+      <button class="btn btn-primary" id="cd-invoice-btn">🧾 Invoice Whole Class</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ITEM ADD/EDIT -->
+<div id="modal-item" class="overlay">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title" id="item-modal-title">New Item</div><button class="modal-x" onclick="closeModal('modal-item')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="item-edit-id"/>
+      <div class="frow full"><div class="field"><label>Item Name <span class="req">*</span></label><input class="input" id="item-name" placeholder="e.g. Monthly Tuition"/></div></div>
+      <div class="frow full"><div class="field"><label>Description</label><input class="input" id="item-desc" placeholder="Short description"/></div></div>
+      <div class="frow"><div class="field"><label>Rate ($)</label><input class="input" id="item-rate" type="number" step="0.01" placeholder="0.00"/></div><div class="field"><label>Category</label><select class="input" id="item-cat-sel"></select></div></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-ghost" onclick="closeModal('modal-item')">Cancel</button><button class="btn btn-primary" onclick="saveItem()">💾 Save Item</button></div>
+  </div>
+</div>
+
+<!-- MODAL: RECURRING PLAN -->
+<div id="modal-recurring" class="overlay">
+  <div class="modal modal-lg">
+    <div class="modal-hd"><div class="modal-title">🔁 Add Recurring Plan</div><button class="modal-x" onclick="closeModal('modal-recurring')">✕</button></div>
+    <div class="modal-body">
+      <div class="frow"><div class="field"><label>Family <span class="req">*</span></label><div class="ta-wrap" id="ta-rec-family-wrap"></div></div><div class="field"><label>Student</label><div class="ta-wrap" id="ta-rec-student-wrap"></div></div></div>
+      <div class="frow"><div class="field"><label>Program / Class</label><div class="ta-wrap" id="ta-rec-program-wrap"></div></div><div class="field"><label>Bill on Day of Month</label><select class="input" id="rec-day"></select></div></div>
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span class="slabel">Items</span><button class="btn btn-xs btn-ghost" onclick="addRecItem()">＋ Add Row</button></div>
+        <div id="rec-items-body"></div>
+        <div style="text-align:right;font-weight:700;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;padding-top:6px" id="rec-total">$0.00/mo</div>
+      </div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-ghost" onclick="closeModal('modal-recurring')">Cancel</button><button class="btn btn-primary" onclick="saveRecurring()">💾 Save Plan</button></div>
+  </div>
+</div>
+
+<!-- MODAL: EXPORT -->
+<div id="modal-export" class="overlay">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title">↓ Export CSV</div><button class="modal-x" onclick="closeModal('modal-export')">✕</button></div>
+    <div class="modal-body">
+      <div class="frow"><div class="field"><label>From Date</label><input class="input" id="exp-from" type="date"/></div><div class="field"><label>To Date</label><input class="input" id="exp-to" type="date"/></div></div>
+      <div class="field"><label>Status Filter</label><select class="input" id="exp-status"><option value="">All</option><option value="paid">Paid Only</option><option value="unpaid">Unpaid Only</option></select></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-ghost" onclick="closeModal('modal-export')">Cancel</button><button class="btn btn-primary" onclick="doExport()">↓ Download CSV</button></div>
+  </div>
+</div>
+
+<!-- MODAL: MANAGE CATEGORIES -->
+<div id="modal-cats" class="overlay">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title">⚙ Manage Categories</div><button class="modal-x" onclick="closeModal('modal-cats')">✕</button></div>
+    <div class="modal-body">
+      <div id="cats-list"></div>
+      <div style="display:flex;gap:7px;margin-top:12px"><input class="input" id="new-cat-input" placeholder="New category name…"/><button class="btn btn-primary btn-sm" onclick="addCategory()">Add</button></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-ghost" onclick="closeModal('modal-cats')">Done</button></div>
+  </div>
+</div>
+
+<!-- MODAL: USER ADD/EDIT -->
+<div id="modal-user" class="overlay">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title" id="user-modal-title">Add User</div><button class="modal-x" onclick="closeModal('modal-user')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="user-edit-idx"/>
+      <div class="frow"><div class="field"><label>Full Name</label><input class="input" id="user-name" placeholder="Jane Smith"/></div><div class="field"><label>Username</label><input class="input" id="user-username" placeholder="jsmith"/></div></div>
+      <div class="frow"><div class="field"><label>Password</label><input class="input" id="user-password" type="password" placeholder="Temporary password"/></div><div class="field"><label>Role</label><select class="input" id="user-role"><option>Administrator</option><option>Staff Member</option><option>Director</option></select></div></div>
+      <div class="frow full"><div class="field"><label>Email</label><input class="input" id="user-email" type="email" placeholder="email@example.com"/></div></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-ghost" onclick="closeModal('modal-user')">Cancel</button><button class="btn btn-primary" onclick="saveUser()">💾 Save User</button></div>
+  </div>
+</div>
+
+<!-- MODAL: CHANGE PASSWORD -->
+<div id="modal-reset-pw" class="overlay">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title">🔑 Change Password</div><button class="modal-x" onclick="closeModal('modal-reset-pw')">✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Current Password</label><input class="input" id="pw-current" type="password"/></div>
+      <div class="field"><label>New Password</label><input class="input" id="pw-new" type="password"/></div>
+      <div class="field"><label>Confirm New Password</label><input class="input" id="pw-confirm" type="password"/></div>
+      <div id="pw-error" style="font-size:11px;color:var(--red);margin-top:6px;display:none"></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-ghost" onclick="closeModal('modal-reset-pw')">Cancel</button><button class="btn btn-primary" onclick="doChangePassword()">Update Password</button></div>
+  </div>
+</div>
 
 <!-- TOAST -->
-<div id="toast" class="toast"></div>
+<div id="toast" class="toast"><span id="toast-msg"></span></div>
 
 <!-- MOBILE BOTTOM NAV -->
 <div id="mobile-nav">
@@ -897,11 +1173,6 @@ const LS = {
   set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} }
 };
 
-function getScriptUrl() {
-  return localStorage.getItem('sw_script_url') ||
-    'https://script.google.com/macros/s/AKfycbwe1dcuxlqdV0_Uuy90teLJNjXTHes3PvAcKzo7lv6oetophcsHquU_DWwVEUXbESly/exec';
-}
-
 let currentUser = null;
 
 // ── SYNC ──────────────────────────────────────────────
@@ -940,7 +1211,7 @@ async function flushSyncQueue(){
 
 // Load ALL data from Google Drive on startup — overwrites localStorage with cloud data
 let cloudLoaded=false;
-async function loadFromCloud(token){
+async function loadFromCloud(token, callback){
   if(!token){const sess=getSession();token=sess?sess.token:null;}
   showCloudStatus('loading');
   // Use google.script.run if served from Apps Script (Google Sites)
@@ -986,8 +1257,9 @@ async function loadFromCloud(token){
       USERS=loadUsers();
       cloudLoaded=true;
       showCloudStatus('online',loaded);
-      renderDashboard();
-    } else { showCloudStatus('error',0,j?j.error:'no response'); }
+      renderDashboard();renderInvoiceTable();renderFamilies();renderClasses();renderItemsLib();renderRecurring();
+      if(callback)callback();
+    } else { showCloudStatus('error',0,j?j.error:'no response'); if(callback)callback(); }
   }, function(e){ showCloudStatus('error',0,e); });
 }
 
@@ -1032,65 +1304,14 @@ function saveScriptUrl(){const url=document.getElementById('script-url').value.t
 function updateConnectStatus(c){document.getElementById('connect-dot').className='connect-dot '+(c?'connected':'disconnected');document.getElementById('connect-text').textContent=c?'Connected to Google Sheets':'Not connected — using local storage';}
 
 // ── DEFAULT DATA ──────────────────────────────────────
-let FAMILIES=LS.get('sw_families')||[
-  {id:'f1',lastName:'Martinson',address:{street:'421 W Maple Ave',city:'Mesa',state:'AZ',zip:'85201'},notes:'',
-   parents:[{id:'p1',name:'Jennifer Martinson',phone:'435-555-0102',email:'moutonmatthew@gmail.com',address:'',relationship:'Mother',prefContact:'Call',isPrimary:true},{id:'p2',name:'David Martinson',phone:'435-555-0103',email:'moutonmatthew@gmail.com',address:'',relationship:'Father',prefContact:'Text',isPrimary:false}],
-   students:[{id:'s1',name:'Tyler Martinson',birthdate:'2013-06-15',grade:'7th',school:'Mesa Middle School',program:'Leadership Track',enrollDate:'2025-09-01',unenrollDate:'',photo:'',notes:'Great leader, punctual.',classIds:[]}],
-   safePersons:[{id:'sp1',name:'Karen Martinson',phone:'435-555-0200',email:'',relationship:'Grandmother',prefContact:'Call',notes:''}],
-   emergencyContacts:[{id:'ec1',name:'Karen Martinson',relationship:'Grandmother',phone:'435-555-0200',phone2:'',email:'',prefContact:'Call',addr:'',notes:''}]},
-  {id:'f2',lastName:'Webb',address:{street:'810 E Baseline Rd',city:'Tempe',state:'AZ',zip:'85283'},notes:'',
-   parents:[{id:'p3',name:'Marcus Webb',phone:'435-555-0187',email:'moutonmatthew@gmail.com',address:'',relationship:'Father',prefContact:'Text',isPrimary:true}],
-   students:[{id:'s2',name:'Ava Webb',birthdate:'2016-03-22',grade:'4th',school:'Tempe Elem',program:'Foundation Program',enrollDate:'2025-09-01',unenrollDate:'',photo:'',notes:'',classIds:[]}],
-   safePersons:[],emergencyContacts:[{id:'ec2',name:'Tina Webb',relationship:'Aunt',phone:'435-555-0188',phone2:'',email:'',prefContact:'Text',addr:'',notes:''}]},
-  {id:'f3',lastName:'Holloway',address:{street:'33 N Center St',city:'Chandler',state:'AZ',zip:'85224'},notes:'',
-   parents:[{id:'p4',name:'Diane Holloway',phone:'435-555-0234',email:'moutonmatthew@gmail.com',address:'',relationship:'Mother',prefContact:'Email',isPrimary:true}],
-   students:[{id:'s3',name:'Noah Holloway',birthdate:'2011-11-08',grade:'9th',school:'Chandler High',program:'Advanced Training',enrollDate:'2025-08-15',unenrollDate:'',photo:'',notes:'High performer.',classIds:[]}],
-   safePersons:[],emergencyContacts:[{id:'ec3',name:'Bob Holloway',relationship:'Father',phone:'435-555-0235',phone2:'',email:'',prefContact:'Call',addr:'',notes:''}]},
-  {id:'f4',lastName:'Torres',address:{street:'1200 W Broadway',city:'Tempe',state:'AZ',zip:'85282'},notes:'',
-   parents:[{id:'p5',name:'Rachel Torres',phone:'435-555-0311',email:'moutonmatthew@gmail.com',address:'',relationship:'Mother',prefContact:'Call',isPrimary:true}],
-   students:[{id:'s4',name:'Liam Torres',birthdate:'2014-07-30',grade:'6th',school:'Tempe Middle',program:'Leadership Track',enrollDate:'2025-09-01',unenrollDate:'',photo:'',notes:'',classIds:[]}],
-   safePersons:[],emergencyContacts:[{id:'ec4',name:'Carlos Torres',relationship:'Father',phone:'435-555-0312',phone2:'',email:'',prefContact:'Call',addr:'',notes:''}]},
-  {id:'f5',lastName:'Kim',address:{street:'556 E Southern Ave',city:'Mesa',state:'AZ',zip:'85204'},notes:'',
-   parents:[{id:'p6',name:'David Kim',phone:'435-555-0422',email:'moutonmatthew@gmail.com',address:'',relationship:'Father',prefContact:'Text',isPrimary:true}],
-   students:[{id:'s5',name:'Sophie Kim',birthdate:'2017-01-14',grade:'2nd',school:'Mesa Elem',program:'Foundation Program',enrollDate:'2025-09-01',unenrollDate:'',photo:'',notes:'Very energetic!',classIds:[]}],
-   safePersons:[],emergencyContacts:[{id:'ec5',name:'Lisa Kim',relationship:'Mother',phone:'435-555-0423',phone2:'',email:'',prefContact:'Call',addr:'',notes:''}]}
-];
-
-let INVOICES=LS.get('sw_invoices')||[
-  {id:'i1',num:'INV-001',familyId:'f1',familyName:'Martinson',email:'moutonmatthew@gmail.com',studentId:'s1',studentName:'Tyler Martinson',program:'Leadership Track',issueDate:'2026-01-01',dueDate:'2026-01-15',items:[{desc:'Monthly Tuition',qty:1,rate:150,disc:false}],notes:'',status:'paid',emailSent:true,payMethod:'ClassWallet',payRef:'CW-20260110-A1B2',payDate:'2026-01-10',payNotes:''},
-  {id:'i2',num:'INV-002',familyId:'f4',familyName:'Torres',email:'moutonmatthew@gmail.com',studentId:'s4',studentName:'Liam Torres',program:'Leadership Track',issueDate:'2026-01-01',dueDate:'2026-01-15',items:[{desc:'Monthly Tuition',qty:1,rate:150,disc:false}],notes:'',status:'paid',emailSent:true,payMethod:'Cash',payRef:'',payDate:'2026-01-12',payNotes:''},
-  {id:'i3',num:'INV-003',familyId:'f5',familyName:'Kim',email:'moutonmatthew@gmail.com',studentId:'s5',studentName:'Sophie Kim',program:'Foundation Program',issueDate:'2026-02-01',dueDate:'2026-02-15',items:[{desc:'Monthly Tuition',qty:1,rate:120,disc:false}],notes:'',status:'paid',emailSent:true,payMethod:'PayPal',payRef:'',payDate:'2026-02-08',payNotes:''},
-  {id:'i4',num:'INV-004',familyId:'f4',familyName:'Torres',email:'moutonmatthew@gmail.com',studentId:'s4',studentName:'Liam Torres',program:'Leadership Track',issueDate:'2026-02-01',dueDate:'2026-02-15',items:[{desc:'Monthly Tuition',qty:1,rate:150,disc:false}],notes:'',status:'paid',emailSent:true,payMethod:'Check',payRef:'',payDate:'2026-02-10',payNotes:'#1042'},
-  {id:'i5',num:'INV-005',familyId:'f3',familyName:'Holloway',email:'moutonmatthew@gmail.com',studentId:'s3',studentName:'Noah Holloway',program:'Advanced Training',issueDate:'2026-02-01',dueDate:'2026-02-15',items:[{desc:'Monthly Tuition',qty:1,rate:180,disc:false}],notes:'',status:'unpaid',emailSent:true,payMethod:'',payRef:'',payDate:'',payNotes:''},
-  {id:'i6',num:'INV-006',familyId:'f2',familyName:'Webb',email:'moutonmatthew@gmail.com',studentId:'s2',studentName:'Ava Webb',program:'Foundation Program',issueDate:'2026-02-01',dueDate:'2026-02-15',items:[{desc:'Monthly Tuition',qty:1,rate:120,disc:false},{desc:'Uniform Kit',qty:1,rate:45,disc:false}],notes:'',status:'unpaid',emailSent:false,payMethod:'',payRef:'',payDate:'',payNotes:''},
-  {id:'i7',num:'INV-007',familyId:'f1',familyName:'Martinson',email:'moutonmatthew@gmail.com',studentId:'s1',studentName:'Tyler Martinson',program:'Leadership Track',issueDate:'2026-03-01',dueDate:'2026-03-15',items:[{desc:'Monthly Tuition',qty:1,rate:150,disc:false}],notes:'',status:'unpaid',emailSent:false,payMethod:'',payRef:'',payDate:'',payNotes:''}
-];
-
-let CLASSES=LS.get('sw_classes')||[
-  {id:'c1',name:'Foundation Program',instructor:'Coach Rivera',description:'Core discipline for ages 7-11.',cost:120,billing:'recurring',capacity:20,days:'Mon / Wed',timeStart:'16:00',timeEnd:'17:30',enrolledIds:['s2','s5'],waitlist:[]},
-  {id:'c2',name:'Leadership Track',instructor:'Coach Washington',description:'Leadership and character development ages 11-14.',cost:150,billing:'recurring',capacity:15,days:'Tue / Thu',timeStart:'16:30',timeEnd:'18:00',enrolledIds:['s1','s4'],waitlist:[]},
-  {id:'c3',name:'Advanced Training',instructor:'Coach Rivera',description:'Elite conditioning for ages 13+.',cost:180,billing:'recurring',capacity:10,days:'Mon / Wed / Fri',timeStart:'17:00',timeEnd:'18:30',enrolledIds:['s3'],waitlist:[]}
-];
-
-let ITEM_CATS=LS.get('sw_item_cats')||['tuition','fee','gear','event','other'];
-
-let ITEMS_LIB=LS.get('sw_items')||[
-  {id:'li1',name:'Monthly Tuition',desc:'Standard monthly tuition',rate:120,cat:'tuition',usedCount:12},
-  {id:'li2',name:'Leadership Track Tuition',desc:'Monthly tuition for Leadership Track',rate:150,cat:'tuition',usedCount:8},
-  {id:'li3',name:'Advanced Training Tuition',desc:'Monthly tuition for Advanced Training',rate:180,cat:'tuition',usedCount:5},
-  {id:'li4',name:'Registration Fee',desc:'One-time annual registration',rate:35,cat:'fee',usedCount:14},
-  {id:'li5',name:'Uniform Kit',desc:'Full uniform set',rate:45,cat:'gear',usedCount:6},
-  {id:'li6',name:'Summer Camp',desc:'Full week summer intensive',rate:250,cat:'event',usedCount:3},
-  {id:'li7',name:'Extra Session',desc:'Single add-on training session',rate:25,cat:'fee',usedCount:4},
-  {id:'li8',name:'StepWise T-Shirt',desc:'Logo tee',rate:18,cat:'gear',usedCount:7},
-  {id:'li9',name:'Year-End Event Ticket',desc:'Annual celebration',rate:15,cat:'event',usedCount:2}
-];
-
-let RECURRING=LS.get('sw_recurring')||[
-  {id:'r1',familyId:'f1',familyName:'Martinson',email:'moutonmatthew@gmail.com',studentId:'s1',studentName:'Tyler Martinson',program:'Leadership Track',day:'1',items:[{desc:'Monthly Tuition',rate:150}],active:true,lastRun:'2026-03-01'},
-  {id:'r2',familyId:'f2',familyName:'Webb',email:'moutonmatthew@gmail.com',studentId:'s2',studentName:'Ava Webb',program:'Foundation Program',day:'1',items:[{desc:'Monthly Tuition',rate:120},{desc:'Sibling Discount',rate:-20}],active:true,lastRun:'2026-03-01'},
-  {id:'r3',familyId:'f5',familyName:'Kim',email:'moutonmatthew@gmail.com',studentId:'s5',studentName:'Sophie Kim',program:'Foundation Program',day:'5',items:[{desc:'Monthly Tuition',rate:120}],active:false,lastRun:'2026-01-05'}
-];
+// Data lives in Google Sheets (cloud) and localStorage (local cache).
+// No hardcoded demo data — pull real data via loadFromCloud().
+let FAMILIES = LS.get('sw_families') || [];
+let INVOICES = LS.get('sw_invoices') || [];
+let CLASSES  = LS.get('sw_classes')  || [];
+let ITEM_CATS = LS.get('sw_item_cats') || ['tuition','fee','gear','event','other'];
+let ITEMS_LIB = LS.get('sw_items')   || [];
+let RECURRING = LS.get('sw_recurring')|| [];
 
 // ── HELPERS ───────────────────────────────────────────
 const uid=()=>Math.random().toString(36).slice(2,10);
@@ -1352,8 +1573,10 @@ let invSortCol='issueDate',invSortDir=-1;
 function setFilter(f){currentFilter=f;['all','unpaid','overdue','paid'].forEach(x=>{const el=document.getElementById('fc-'+x);if(el)el.classList.toggle('active',x===f);});renderInvoiceTable();}
 function renderInvoiceTable(){
   const search=(document.getElementById('inv-search')||{value:''}).value.toLowerCase();
-  const from=(document.getElementById('date-from')||{value:''}).value;
-  const to=(document.getElementById('date-to')||{value:''}).value;
+  const statusSel=(document.getElementById('inv-status-filter')||{value:''}).value;
+  if(statusSel)currentFilter=statusSel;
+  const from=(document.getElementById('inv-from')||{value:''}).value;
+  const to=(document.getElementById('inv-to')||{value:''}).value;
   let invs=[...INVOICES];
   if(search)invs=invs.filter(i=>(i.familyName||'').toLowerCase().includes(search)||(i.num||'').toLowerCase().includes(search)||(i.studentName||'').toLowerCase().includes(search)||(i.program||'').toLowerCase().includes(search));
   if(from)invs=invs.filter(i=>i.issueDate>=from);
@@ -1495,7 +1718,7 @@ function renderFamilies(){
 // ── CLASSES ───────────────────────────────────────────
 function renderClasses(){
   const wrap=document.getElementById('classes-wrap');if(!wrap)return;
-  if(!CLASSES.length){wrap.innerHTML='<div class="card"><div class="empty"><div class="empty-icon">🎯</div><div class="empty-title">No classes yet</div></div></div>';return;}
+  if(!CLASSES.length){wrap.innerHTML='<div class="empty" style="padding:40px"><div class="empty-icon">🎯</div><div class="empty-title">No classes yet</div><div class="empty-sub">Click "+ New Class" to add your first class</div></div>';return;}
   wrap.innerHTML=`<div class="class-grid">${CLASSES.map(c=>{
     const enrolled=c.enrolledIds.length,cap=c.capacity||0,pct=cap?Math.min(enrolled/cap*100,100):50,full=cap&&enrolled>=cap;
     return`<div class="class-card" onclick="openClassDetail('${c.id}')">
@@ -1521,7 +1744,7 @@ function renderItemsLib(){
   if(itemCat!=='all')items=items.filter(i=>i.cat===itemCat);
   const wrap=document.getElementById('items-lib-wrap');if(!wrap)return;
   if(!items.length){wrap.innerHTML='<div class="empty"><div class="empty-icon">📦</div><div class="empty-title">No items found</div></div>';return;}
-  wrap.innerHTML=`<div class="item-lib-grid">${items.map(item=>`
+  wrap.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px">${items.map(item=>`
     <div class="lib-item ${item.usedCount>6?'top-used':''}" onclick="pickLibItem('${item.id}')">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div class="lib-name">${item.name}</div>
@@ -1610,7 +1833,7 @@ function renderReports(){
   const revenue=paid.reduce((s,i)=>s+sum(i.items),0);
   const onTime=paid.filter(i=>i.payDate&&i.payDate<=i.dueDate).length;
   const pct=paid.length?Math.round(onTime/paid.length*100):0;
-  document.getElementById('report-stats').innerHTML=`
+  document.getElementById('dash-stats2').innerHTML=`
     <div class="stat"><div class="stat-top"><span class="stat-label">YTD Revenue</span><div class="stat-iw gold">💰</div></div><div class="stat-val gold">${fmt(revenue)}</div><div class="stat-foot">All paid invoices</div></div>
     <div class="stat"><div class="stat-top"><span class="stat-label">Invoices Sent</span><div class="stat-iw blue">📋</div></div><div class="stat-val">${INVOICES.length}</div><div class="stat-foot">all time</div></div>
     <div class="stat"><div class="stat-top"><span class="stat-label">Paid On Time</span><div class="stat-iw green">✅</div></div><div class="stat-val green">${pct}%</div><div class="stat-foot">${onTime} of ${paid.length}</div></div>
@@ -2325,7 +2548,17 @@ checkAutoSend();
 // This file is safe to be public.
 
 function getScriptUrl() {
-  return localStorage.getItem('sw_script_url') || 'https://script.google.com/macros/s/AKfycby3YhR42FU2GyfjvmeJqcr1oOVUHY1RcC3i5K7llolrk_dPa0RpBe9_eCJ3fwsiatu8/exec';
+  return localStorage.getItem('sw_script_url') ||
+    'https://script.google.com/macros/s/AKfycby3YhR42FU2GyfjvmeJqcr1oOVUHY1RcC3i5K7llolrk_dPa0RpBe9_eCJ3fwsiatu8/exec';
+}
+
+// Manual refresh — syncs latest data from Google Sheets then re-renders current tab
+function refreshFromCloud() {
+  const btn = document.querySelector('.tb-right .btn-ghost');
+  if (btn) { btn.textContent = '⏳ Syncing…'; btn.disabled = true; }
+  loadFromCloud(null, function() {
+    if (btn) { btn.textContent = '↻ Refresh'; btn.disabled = false; }
+  });
 }
 
 // ── SESSION ───────────────────────────────────────────
