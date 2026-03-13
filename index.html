@@ -273,7 +273,7 @@ select.input{cursor:pointer}
 .modal-x:hover{background:var(--surface2)}
 .modal-body{padding:16px 18px}
 .modal-ft{padding:11px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:6px;position:sticky;bottom:0;background:var(--surface)}
-.modal-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg);padding:0 18px;overflow-x:auto}
+.modal-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg);padding:0 18px;overflow-x:auto;position:sticky;top:0;z-index:2;flex-shrink:0}
 .modal-tab{padding:10px 14px;font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
 .modal-tab:hover{color:var(--text2)}
 .modal-tab.active{color:var(--navy);border-bottom-color:var(--navy)}
@@ -2822,9 +2822,13 @@ checkAutoSend();
 // Passwords live in Google Script Properties — not here.
 // This file is safe to be public.
 
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwe1dcuxlqdV0_Uuy90teLJNjXTHes3PvAcKzo7lv6oetophcsHquU_DWwVEUXbESly/exec';
 function getScriptUrl() {
-  return localStorage.getItem('sw_script_url') ||
-    'https://script.google.com/macros/s/AKfycbw66A-IMZvfNV2-7TQvwruLv27OYwiYS8GdO4tJoGLqRB4Q_lzTf3sTATl6tDv_vbbd/exec';
+  // Seed localStorage on first visit so every device starts with the correct URL
+  if (!localStorage.getItem('sw_script_url')) {
+    localStorage.setItem('sw_script_url', GAS_URL);
+  }
+  return localStorage.getItem('sw_script_url') || GAS_URL;
 }
 
 // Manual refresh — syncs latest data from Google Sheets then re-renders current tab
