@@ -2536,16 +2536,35 @@ function previewPDF(){
 }
 function printInvoice(id){const inv=INVOICES.find(i=>i.id===id);if(inv)printInvoiceObj(inv);}
 
-function savePDF(filename){
-  const frame=document.getElementById('pdf-frame');
-  if(!frame)return;
-  try{
-    const win=frame.contentWindow;
-    const name=(filename||'invoice').replace(/[^a-zA-Z0-9-]/g,'_');
-    frame.contentDocument.title=name;
-    toast('🖨 Print dialog opening — choose "Save as PDF" as the destination');
-    setTimeout(()=>win.print(),300);
-  }catch(e){toast('Use your browser\'s Print → Save as PDF option');}}
+// Stores the last-rendered invoice HTML + filename for the action buttons
+let _pdfHtml = '';
+let _pdfFilename = 'invoice';
+
+function doPrint(){
+  if(!_pdfHtml){toast('⚠️ No invoice loaded');return;}
+  const w = window.open('','_blank','width=900,height=700');
+  if(!w){toast('⚠️ Pop-up blocked — allow pop-ups for this site and try again');return;}
+  w.document.write(_pdfHtml);
+  w.document.close();
+  // Give the new window time to fully render before triggering print
+  w.onload = function(){ setTimeout(()=>{ w.focus(); w.print(); }, 400); };
+  // Fallback if onload already fired
+  setTimeout(()=>{ try{ w.focus(); w.print(); }catch(e){} }, 800);
+}
+
+function doDownload(){
+  if(!_pdfHtml){toast('⚠️ No invoice loaded');return;}
+  const blob = new Blob([_pdfHtml], {type:'text/html;charset=utf-8'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = _pdfFilename.replace(/[^a-zA-Z0-9-]/g,'_') + '.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('📥 Invoice downloaded — open the file in your browser then Print → Save as PDF');
+}
 
 function printInvoiceObj(inv){
   const t = sum(inv.items);
@@ -2645,37 +2664,62 @@ function printInvoiceObj(inv){
       </div>
     </div>`;
 
-  // Show in in-app modal instead of new window
+  // ── Build the full printable HTML document ──────────────
+  const fullHtml = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"/>
+<title>${inv.num} — StepWise Invoice</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#e5e7eb;padding:24px}
+@media print{
+  body{background:#fff!important;padding:0!important}
+  .no-print{display:none!important}
+}
+</style>
+</head><body>${html}</body></html>`;
+
+  // Store for Print / Download buttons
+  _pdfHtml     = fullHtml;
+  _pdfFilename = inv.num || 'invoice';
+
+  // ── Build / reuse overlay ──────────────────────────────
   let overlay = document.getElementById('pdf-overlay');
   if (!overlay) {
     overlay = document.createElement('div');
     overlay.id = 'pdf-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;flex-direction:column;overflow:hidden';
     document.body.appendChild(overlay);
   }
+
   overlay.innerHTML = `
-    <div style="background:#fff;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #e4e8ef;flex-shrink:0">
+    <div style="background:#fff;display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid #e4e8ef;flex-shrink:0;flex-wrap:wrap;gap:8px">
       <div style="font-weight:700;font-size:13px;color:#0f2d52">${inv.num} — Invoice Preview</div>
-      <div style="display:flex;gap:8px">
-        <button onclick="savePDF('${inv.num}')" style="background:#059669;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit" title="Opens print dialog — choose 'Save as PDF'">🖨 Print / Save PDF</button>
-        <button onclick="document.getElementById('pdf-overlay').style.display='none'" style="background:#f1f5f9;color:#0f2d52;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">✕ Close</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="doPrint()" style="display:inline-flex;align-items:center;gap:6px;background:#0f2d52;color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
+          🖨️ <span>Print</span>
+        </button>
+        <button onclick="doDownload()" style="display:inline-flex;align-items:center;gap:6px;background:#059669;color:#fff;border:none;border-radius:7px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
+          💾 <span>Save / Download</span>
+        </button>
+        <button onclick="document.getElementById('pdf-overlay').style.display='none'" style="display:inline-flex;align-items:center;gap:6px;background:#f1f5f9;color:#374151;border:1px solid #d1d5db;border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
+          ✕ Close
+        </button>
       </div>
     </div>
-    <iframe id="pdf-frame" style="flex:1;border:none;background:#e5e7eb"></iframe>`;
+    <div style="background:#6b7280;padding:6px;text-align:center;font-size:10px;color:rgba(255,255,255,.7);flex-shrink:0">
+      Preview below · Use <strong style="color:#fff">Print</strong> to open the print dialog (choose "Save as PDF") · Use <strong style="color:#fff">Save / Download</strong> to download the file
+    </div>
+    <iframe id="pdf-frame" style="flex:1;border:none;background:#e5e7eb" sandbox="allow-same-origin allow-scripts"></iframe>`;
+
   overlay.style.display = 'flex';
 
+  // Load via blob URL — keep blobUrl alive until overlay is closed
   const frame = document.getElementById('pdf-frame');
-  const fullHtml = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
-    <style>
-      * { box-sizing:border-box; margin:0; padding:0; }
-      body { font-family:'Segoe UI',Arial,sans-serif; background:#e5e7eb; padding:24px; }
-      @media print { body { background:#fff; padding:0; } }
-    </style>
-    </head><body>${html}</body></html>`;
-  const blob = new Blob([fullHtml], {type: 'text/html; charset=utf-8'});
-  const blobUrl = URL.createObjectURL(blob);
-  frame.onload = function() { URL.revokeObjectURL(blobUrl); };
+  const blob2  = new Blob([fullHtml], {type:'text/html;charset=utf-8'});
+  const blobUrl = URL.createObjectURL(blob2);
   frame.src = blobUrl;
+  // Revoke only after a generous delay so the frame is fully painted
+  setTimeout(()=> URL.revokeObjectURL(blobUrl), 10000);
 }
 
 
