@@ -1678,6 +1678,12 @@ async function sendSingleEmail(id){
 // ── FAMILIES ──────────────────────────────────────────
 let famFilter='all';
 function setFamFilter(f){famFilter=f;['all','active','inactive'].forEach(x=>{const el=document.getElementById('fam-f-'+x);if(el)el.classList.toggle('active',x===f);});renderFamilies();}
+function famStudentTag(s){
+  const cls=CLASSES.find(c=>c.enrolledIds.includes(s.id));
+  const active=isStudentActive(s);
+  const clickFn=cls?`event.stopPropagation();openClassDetailByStudent('${s.id}')`:null;
+  return`<span class="fam-tag ${active?'':'inactive'}" ${clickFn?`onclick="${clickFn}" style="cursor:pointer"`:''}>🎓 ${s.name}${cls?' · <span style="color:var(--blue);font-size:10px">'+cls.name+'</span>':''}${!active?' <span style="opacity:.6">(inactive)</span>':''}</span>`;
+}
 function renderFamilies(){
   const search=(document.getElementById('roster-search')||{value:''}).value.toLowerCase();
   const prog=(document.getElementById('prog-filter')||{value:''}).value;
@@ -1699,7 +1705,7 @@ function renderFamilies(){
         <div>
           <div class="fam-name">${f.lastName} Family</div>
           <div class="fam-sub">${pp.name} · ${pp.email}${pp.phone?' · '+pp.phone:''}</div>
-          <div style="margin-top:3px">${f.students.map(s=>{const cls=CLASSES.find(c=>c.enrolledIds.includes(s.id));return`<span class="fam-tag ${isStudentActive(s)?'':'inactive'}" onclick="event.stopPropagation();${cls?`openClassDetailByStudent('${s.id}')`:''}">🎓 <span class="${cls?'link-text':''" style="font-size:11px">${s.name}</span>${cls?` · ${cls.name}`:''}${!isStudentActive(s)?' (inactive)':''}</span>`;}).join('')}</div>
+          <div style="margin-top:3px">${f.students.map(s=>famStudentTag(s)).join('')}</div>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
