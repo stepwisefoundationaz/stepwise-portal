@@ -719,6 +719,14 @@ select.input{cursor:pointer}
           <div style="padding:0 16px 16px" id="my-account-section"></div>
         </div>
 
+        <!-- Programs -->
+        <div class="card"><div class="card-hd"><div class="card-title">🎯 Programs</div><button class="btn btn-primary btn-sm" onclick="openAddProgram()">＋ Add Program</button></div>
+          <div style="padding:0 16px 16px">
+            <p style="font-size:11px;color:var(--text3);margin-bottom:12px">Programs group your classes together (e.g. Foundation Program, Leadership Track). Classes are created under Programs.</p>
+            <div id="programs-list"></div>
+          </div>
+        </div>
+
         <!-- User Management -->
         <div class="card" id="user-mgmt-card"><div class="card-hd"><div class="card-title">👥 User Management</div><button class="btn btn-primary btn-sm" onclick="openAddUser()">＋ Add User</button></div>
           <div style="padding:0 16px 16px" id="users-list"></div>
@@ -1084,6 +1092,19 @@ select.input{cursor:pointer}
   </div>
 </div>
 
+<!-- MODAL: PROGRAM ADD/EDIT -->
+<div id="modal-program" class="overlay">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-title" id="program-modal-title">New Program</div><button class="modal-x" onclick="closeModal('modal-program')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="program-edit-id"/>
+      <div class="frow full"><div class="field"><label>Program Name <span class="req">*</span></label><input class="input" id="program-name" placeholder="e.g. Foundation Program"/></div></div>
+      <div class="frow full"><div class="field"><label>Description</label><textarea class="input" id="program-desc" style="min-height:50px;resize:vertical" placeholder="Brief description of this program…"></textarea></div></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-ghost" onclick="closeModal('modal-program')">Cancel</button><button class="btn btn-primary" onclick="saveProgram()">💾 Save Program</button></div>
+  </div>
+</div>
+
 <!-- MODAL: MANAGE CATEGORIES -->
 <div id="modal-cats" class="overlay">
   <div class="modal">
@@ -1167,9 +1188,9 @@ const TODAY = new Date().toISOString().slice(0,10);
 
 // One-time migration: wipe stale demo data from older builds.
 // Bump DATA_VERSION any time you need to force a clean slate.
-const DATA_VERSION = '2026-03-v4';
+const DATA_VERSION = '2026-03-v5';
 if(localStorage.getItem('sw_data_version') !== DATA_VERSION){
-  ['sw_families','sw_invoices','sw_classes','sw_items','sw_recurring','sw_item_cats'].forEach(k=>localStorage.removeItem(k));
+  ['sw_families','sw_invoices','sw_classes','sw_items','sw_recurring','sw_item_cats','sw_programs'].forEach(k=>localStorage.removeItem(k));
   localStorage.setItem('sw_data_version', DATA_VERSION);
 }
 
@@ -1225,7 +1246,7 @@ async function loadFromCloud(token, callback){
       .withSuccessHandler(function(data){
         if(data&&data.ok){
           const d=data.data||data;
-          const keys=['sw_families','sw_invoices','sw_classes','sw_items','sw_recurring','sw_item_cats'];
+          const keys=['sw_families','sw_invoices','sw_classes','sw_items','sw_recurring','sw_item_cats','sw_programs'];
           let loaded=0;
           keys.forEach(k=>{if(d[k]!==undefined&&d[k]!==null){localStorage.setItem(k,JSON.stringify(d[k]));loaded++;}});
           FAMILIES=LS.get('sw_families')||FAMILIES;
@@ -1234,6 +1255,7 @@ async function loadFromCloud(token, callback){
           ITEMS_LIB=LS.get('sw_items')||ITEMS_LIB;
           RECURRING=LS.get('sw_recurring')||RECURRING;
           ITEM_CATS=LS.get('sw_item_cats')||ITEM_CATS;
+          PROGRAMS=LS.get('sw_programs')||PROGRAMS;
           cloudLoaded=true;
           showCloudStatus('online',loaded);
           renderDashboard();
@@ -1250,7 +1272,7 @@ async function loadFromCloud(token, callback){
   xhrGet(url+'?action=getAll&token='+encodeURIComponent(token), function(j){
     if(j&&j.ok&&j.data){
       const d=j.data;
-      const keys=['sw_families','sw_invoices','sw_classes','sw_items','sw_recurring','sw_item_cats','sw_users'];
+      const keys=['sw_families','sw_invoices','sw_classes','sw_items','sw_recurring','sw_item_cats','sw_programs','sw_users'];
       let loaded=0;
       keys.forEach(k=>{if(d[k]!==undefined&&d[k]!==null){localStorage.setItem(k,JSON.stringify(d[k]));loaded++;}});
       FAMILIES=LS.get('sw_families')||FAMILIES;
@@ -1259,6 +1281,7 @@ async function loadFromCloud(token, callback){
       ITEMS_LIB=LS.get('sw_items')||ITEMS_LIB;
       RECURRING=LS.get('sw_recurring')||RECURRING;
       ITEM_CATS=LS.get('sw_item_cats')||ITEM_CATS;
+      PROGRAMS=LS.get('sw_programs')||PROGRAMS;
       USERS=loadUsers();
       cloudLoaded=true;
       showCloudStatus('online',loaded);
@@ -1311,6 +1334,7 @@ function updateConnectStatus(c){document.getElementById('connect-dot').className
 // ── DEFAULT DATA ──────────────────────────────────────
 // Data lives in Google Sheets (cloud) and localStorage (local cache).
 // No hardcoded demo data — pull real data via loadFromCloud().
+let PROGRAMS = LS.get('sw_programs') || []; // [{id, name, description, color}]
 let FAMILIES = LS.get('sw_families') || [];
 let INVOICES = LS.get('sw_invoices') || [];
 let CLASSES  = LS.get('sw_classes')  || [];
@@ -1331,7 +1355,7 @@ const getAvColor=name=>avatarColors[name.charCodeAt(0)%avatarColors.length];
 const getInitials=name=>name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
 const getPrimaryParent=fam=>(fam.parents||[]).find(p=>p.isPrimary)||(fam.parents||[])[0]||{name:fam.lastName+' Family',email:'',phone:''};
 function badgeHtml(status){const map={paid:'badge-paid',unpaid:'badge-unpaid',overdue:'badge-overdue'};return `<span class="badge ${map[status]||'badge-unpaid'}">${status.charAt(0).toUpperCase()+status.slice(1)}</span>`;}
-function nextInvNum(){const nums=INVOICES.map(i=>parseInt(i.num.replace('INV-',''))||0);return 'INV-'+String((nums.length?Math.max(...nums):0)+1).padStart(3,'0');}
+function nextInvNum(){const nums=INVOICES.map(i=>parseInt((i.num||'').replace(/^[A-Z]+-/,''))||0);return 'SWF-'+String((nums.length?Math.max(...nums):0)+1).padStart(5,'0');}
 function getAllStudents(){return FAMILIES.flatMap(f=>(f.students||[]).map(s=>({...s,familyId:f.id,familyName:f.lastName,familyObj:f})));}
 function fmt12(t){if(!t)return'';const[h,m]=t.split(':');const hh=parseInt(h);return`${hh>12?hh-12:hh||12}:${m} ${hh>=12?'PM':'AM'}`;}
 function catLabel(c){return{tuition:'📚 Tuition',fee:'💼 Fee',gear:'👕 Gear',event:'🎉 Event',other:'📌 Other'}[c]||'📌 '+c;}
@@ -1428,9 +1452,9 @@ function getStudentOptions(familyId){
   return (fam.students||[]).map(s=>({value:s.id,label:s.name+(!isStudentActive(s)?' (inactive)':''),sub:s.program,search:s.name}));
 }
 function getProgramOptions(){
-  const classOpts=CLASSES.map(c=>({value:c.name,label:c.name,sub:'Class · '+fmt(c.cost)+'/mo',search:c.name}));
-  const itemOpts=ITEMS_LIB.filter(i=>i.cat==='tuition').map(i=>({value:i.name,label:i.name,sub:'Item · '+fmt(i.rate),search:i.name}));
-  return[...classOpts,...itemOpts];
+  const progOpts=PROGRAMS.map(p=>({value:p.name,label:p.name,sub:'Program',search:p.name,icon:'🎯'}));
+  const classOpts=CLASSES.map(c=>({value:c.name,label:c.name,sub:'Class · '+fmt(c.cost)+(c.billing==='recurring'?'/mo':''),search:c.name,icon:'🏋️'}));
+  return[...progOpts,...classOpts];
 }
 
 // ── DATE RANGE HELPERS ───────────────────────────────
@@ -1670,19 +1694,42 @@ async function bulkSend(){
   toast(`✅ ${checked.length} invoice${checked.length>1?'s':''}  sent!`);
   renderSendQueue();updateQueueBadge();renderDashboard();
 }
-async function sendSingleEmail(id){
+function sendSingleEmail(id){
   const inv=INVOICES.find(i=>i.id===id);if(!inv)return;
+  if(!inv.email){toast('⚠️ No email address on file for this family');return;}
+  const sess=getSession();
+  const token=sess?sess.token:null;
+  if(!token){toast('⚠️ Not authenticated');return;}
   const overlay=document.getElementById('send-overlay');
   overlay.classList.add('open');
-  document.getElementById('send-overlay-title').textContent=`Sending ${inv.num}…`;
-  document.getElementById('send-overlay-sub').textContent=`To: ${inv.email}`;
-  document.getElementById('send-overlay-progress').textContent='';
-  await new Promise(r=>setTimeout(r,3200));
-  overlay.classList.remove('open');
-  INVOICES=INVOICES.map(i=>i.id===id?{...i,emailSent:true}:i);
-  LS.set('sw_invoices',INVOICES);
-  toast(`✅ ${inv.num} sent to ${inv.email}`);
-  renderInvoiceTable();renderSendQueue();updateQueueBadge();
+  document.getElementById('send-overlay-title').textContent='Sending '+inv.num+'…';
+  document.getElementById('send-overlay-sub').textContent='To: '+inv.email;
+  document.getElementById('send-overlay-progress').textContent='Connecting…';
+  const url=getScriptUrl();
+  const xhr=new XMLHttpRequest();
+  xhr.open('POST',url,true);
+  xhr.setRequestHeader('Content-Type','text/plain;charset=utf-8');
+  xhr.timeout=20000;
+  xhr.onload=function(){
+    overlay.classList.remove('open');
+    try{
+      const res=JSON.parse(xhr.responseText);
+      if(res.ok){
+        INVOICES=INVOICES.map(i=>i.id===id?{...i,emailSent:true}:i);
+        LS.set('sw_invoices',INVOICES);
+        syncToSheets('sw_invoices',INVOICES);
+        toast('✅ '+inv.num+' sent to '+inv.email);
+        renderInvoiceTable();renderSendQueue();updateQueueBadge();
+      } else {
+        toast('❌ Email failed: '+(res.error||'Unknown error'));
+      }
+    }catch(e){toast('❌ Unexpected response from server');}
+  };
+  xhr.onerror=xhr.ontimeout=function(){
+    overlay.classList.remove('open');
+    toast('❌ Could not reach server — check connection');
+  };
+  xhr.send(JSON.stringify({action:'sendInvoice',token,invoice:inv}));
 }
 
 // ── FAMILIES ──────────────────────────────────────────
@@ -2178,7 +2225,7 @@ function openAddFamily(){
   ['fam-lastname','fam-addr-street','fam-addr-city','fam-addr-zip','fam-notes'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('fam-addr-state').value='AZ';
   famParents=[{id:uid(),name:'',phone:'',email:'',address:'',relationship:'',prefContact:'Call',isPrimary:true}];
-  famStudents=[{id:uid(),name:'',birthdate:'',grade:'',school:'',program:'Foundation Program',enrollDate:TODAY,unenrollDate:'',photo:'',notes:'',classIds:[]}];
+  famStudents=[{id:uid(),name:'',birthdate:'',grade:'',school:'',program:PROGRAMS[0]?.name||'',enrollDate:TODAY,unenrollDate:'',photo:'',notes:'',classIds:[]}];
   famSafePersons=[];famEmergencyContacts=[{id:uid(),name:'',relationship:'',phone:'',phone2:'',email:'',prefContact:'Call',addr:'',notes:''}];
   renderParentsList();renderStudentsList();renderSafePersonsList();renderEmergencyContacts();
   switchFamTab('family');openModal('modal-family');
@@ -2218,7 +2265,7 @@ function renderParentsList(){
       </div>
     </div>`).join('');
 }
-function addStudentRow(){famStudents.push({id:uid(),name:'',birthdate:'',grade:'',school:'',program:'Foundation Program',enrollDate:TODAY,unenrollDate:'',photo:'',notes:'',classIds:[]});renderStudentsList();}
+function addStudentRow(){famStudents.push({id:uid(),name:'',birthdate:'',grade:'',school:'',program:PROGRAMS[0]?.name||'',enrollDate:TODAY,unenrollDate:'',photo:'',notes:'',classIds:[]});renderStudentsList();}
 function renderStudentsList(){
   document.getElementById('students-list').innerHTML=famStudents.map((s,i)=>{
     const age=calcAge(s.birthdate);const active=isStudentActive(s);
@@ -2231,11 +2278,11 @@ function renderStudentsList(){
         </div>
         <input type="file" id="photo-input-${i}" accept="image/*" style="display:none" onchange="loadStudentPhoto(${i},this)"/>
         <div style="flex:1">
-          <div class="frow"><div class="field"><label>Full Name<span class="req">*</span></label><input class="input" value="${s.name||''}" oninput="famStudents[${i}].name=this.value"/></div><div class="field"><label>Birthdate</label><input class="input" type="date" value="${s.birthdate||''}" oninput="famStudents[${i}].birthdate=this.value;renderStudentsList()"/></div></div>
+          <div class="frow"><div class="field"><label>Full Name<span class="req">*</span></label><input class="input" value="${s.name||''}" oninput="famStudents[${i}].name=this.value"/></div><div class="field"><label>Birthdate</label><input class="input" type="text" value="${s.birthdate||''}" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" oninput="famStudents[${i}].birthdate=this.value" onblur="if(this.value&&!/^\d{4}-\d{2}-\d{2}$/.test(this.value)){this.style.borderColor='var(--red)';this.title='Format: YYYY-MM-DD';}else{this.style.borderColor='';this.title='';}renderStudentsList()"/></div></div>
           <div class="frow thirds"><div class="field"><label>Grade</label><input class="input" value="${s.grade||''}" oninput="famStudents[${i}].grade=this.value"/></div><div class="field"><label>Age</label><input class="input" value="${age?age+' yrs':''}" readonly style="color:var(--text3)"/></div><div class="field"><label>School</label><input class="input" value="${s.school||''}" oninput="famStudents[${i}].school=this.value"/></div></div>
         </div>
       </div>
-      <div class="frow"><div class="field"><label>Program</label><select class="input" onchange="famStudents[${i}].program=this.value">${['Foundation Program','Leadership Track','Advanced Training','Mentorship Program'].map(p=>`<option ${p===s.program?'selected':''}>${p}</option>`).join('')}</select></div><div class="field"><label>Class</label><select class="input" onchange="famStudents[${i}].classIds=[this.value].filter(Boolean)"><option value="">No class</option>${CLASSES.map(c=>`<option value="${c.id}" ${(s.classIds||[]).includes(c.id)?'selected':''}>${c.name}</option>`).join('')}</select></div></div>
+      <div class="frow"><div class="field"><label>Program</label><select class="input" onchange="famStudents[${i}].program=this.value">${['',...PROGRAMS.map(p=>p.name),...CLASSES.map(c=>c.name)].map(p=>`<option value="${p}" ${p===s.program?'selected':''}>${p||'— Select —'}</option>`).join('')}</select></div><div class="field"><label>Class</label><select class="input" onchange="famStudents[${i}].classIds=[this.value].filter(Boolean)"><option value="">No class</option>${CLASSES.map(c=>`<option value="${c.id}" ${(s.classIds||[]).includes(c.id)?'selected':''}>${c.name}</option>`).join('')}</select></div></div>
       <div class="frow"><div class="field"><label>Enroll Date<span class="req">*</span></label><input class="input" type="date" value="${s.enrollDate||''}" oninput="famStudents[${i}].enrollDate=this.value;renderStudentsList()"/></div><div class="field"><label>Unenroll Date <span style="color:var(--text3);font-weight:normal">(blank = active)</span></label><input class="input" type="date" value="${s.unenrollDate||''}" oninput="famStudents[${i}].unenrollDate=this.value;renderStudentsList()"/></div></div>
       <div class="frow full"><div class="field"><label>Notes</label><textarea class="input" style="min-height:40px;resize:vertical" oninput="famStudents[${i}].notes=this.value" placeholder="Anything staff should know…">${s.notes||''}</textarea></div></div>
     </div>`;
@@ -2472,6 +2519,19 @@ function previewPDF(){
   printInvoiceObj(tmp);
 }
 function printInvoice(id){const inv=INVOICES.find(i=>i.id===id);if(inv)printInvoiceObj(inv);}
+
+function savePDF(filename){
+  const frame=document.getElementById('pdf-frame');
+  if(!frame)return;
+  try{
+    // Use print dialog with PDF destination — most reliable cross-browser approach
+    const win=frame.contentWindow;
+    const name=(filename||'invoice').replace(/[^a-zA-Z0-9-]/g,'_');
+    // Set document title so browser uses it as filename
+    frame.contentDocument.title=name;
+    win.print();
+  }catch(e){toast('Use 🖨 Print → Save as PDF in the print dialog');}
+}
 function printInvoiceObj(inv){
   const t = sum(inv.items);
   const family = FAMILIES.find(f => f.id === inv.familyId) || {};
@@ -2582,7 +2642,8 @@ function printInvoiceObj(inv){
     <div style="background:#fff;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #e4e8ef;flex-shrink:0">
       <div style="font-weight:700;font-size:13px;color:#0f2d52">${inv.num} — Invoice Preview</div>
       <div style="display:flex;gap:8px">
-        <button onclick="document.getElementById('pdf-frame').contentWindow.print()" style="background:#0f2d52;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🖨 Print / Save PDF</button>
+        <button onclick="savePDF('${inv.num}')" style="background:#059669;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">💾 Save PDF</button>
+        <button onclick="document.getElementById('pdf-frame').contentWindow.print()" style="background:#0f2d52;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">🖨 Print</button>
         <button onclick="document.getElementById('pdf-overlay').style.display='none'" style="background:#f1f5f9;color:#0f2d52;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">✕ Close</button>
       </div>
     </div>
@@ -2604,6 +2665,76 @@ function printInvoiceObj(inv){
 
 
 function openExport(){document.getElementById('exp-from').value='';document.getElementById('exp-to').value=TODAY;openModal('modal-export');}
+
+// ── PROGRAMS ──────────────────────────────────────────
+function renderProgramsList(){
+  const list=document.getElementById('programs-list');if(!list)return;
+  if(!PROGRAMS.length){
+    list.innerHTML='<div style="text-align:center;padding:16px;font-size:12px;color:var(--text3)">No programs yet. Add one above to get started.</div>';
+    return;
+  }
+  list.innerHTML=PROGRAMS.map(p=>{
+    const classCount=CLASSES.filter(c=>c.programId===p.id).length;
+    return`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-weight:600;font-size:13px">${p.name}</div>
+        ${p.description?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${p.description}</div>`:''}
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">${classCount} class${classCount!==1?'es':''}</div>
+      </div>
+      <div style="display:flex;gap:5px">
+        <button class="btn btn-xs btn-ghost" onclick="openEditProgram('${p.id}')">✏️ Edit</button>
+        <button class="btn btn-xs btn-danger" onclick="deleteProgram('${p.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openAddProgram(){
+  document.getElementById('program-edit-id').value='';
+  document.getElementById('program-modal-title').textContent='New Program';
+  document.getElementById('program-name').value='';
+  document.getElementById('program-desc').value='';
+  openModal('modal-program');
+}
+
+function openEditProgram(id){
+  const p=PROGRAMS.find(x=>x.id===id);if(!p)return;
+  document.getElementById('program-edit-id').value=id;
+  document.getElementById('program-modal-title').textContent='Edit Program';
+  document.getElementById('program-name').value=p.name;
+  document.getElementById('program-desc').value=p.description||'';
+  openModal('modal-program');
+}
+
+function saveProgram(){
+  const name=document.getElementById('program-name').value.trim();
+  if(!name){toast('⚠️ Program name required');return;}
+  const editId=document.getElementById('program-edit-id').value;
+  if(editId){
+    PROGRAMS=PROGRAMS.map(p=>p.id===editId?{...p,name,description:document.getElementById('program-desc').value}:p);
+  } else {
+    PROGRAMS.push({id:uid(),name,description:document.getElementById('program-desc').value});
+  }
+  LS.set('sw_programs',PROGRAMS);
+  syncToSheets('sw_programs',PROGRAMS);
+  closeModal('modal-program');
+  renderProgramsList();
+  toast('✅ Program saved!');
+}
+
+function deleteProgram(id){
+  const p=PROGRAMS.find(x=>x.id===id);if(!p)return;
+  const classCount=CLASSES.filter(c=>c.programId===id).length;
+  const msg=classCount>0
+    ?`Delete "${p.name}"? It has ${classCount} class${classCount>1?'es':''} associated with it. The classes will remain but lose their program link.`
+    :`Delete program "${p.name}"?`;
+  if(!confirm(msg))return;
+  PROGRAMS=PROGRAMS.filter(x=>x.id!==id);
+  LS.set('sw_programs',PROGRAMS);
+  syncToSheets('sw_programs',PROGRAMS);
+  renderProgramsList();
+  toast('🗑 Program deleted');
+}
 function doExport(){
   const from=document.getElementById('exp-from').value,to=document.getElementById('exp-to').value,sf=document.getElementById('exp-status').value;
   let invs=[...INVOICES];if(from)invs=invs.filter(i=>i.issueDate>=from);if(to)invs=invs.filter(i=>i.issueDate<=to);if(sf==='paid')invs=invs.filter(i=>i.status==='paid');else if(sf==='unpaid')invs=invs.filter(i=>i.status!=='paid');
@@ -2614,7 +2745,7 @@ function doExport(){
 // ── SETTINGS ──────────────────────────────────────────
 function saveSettings(){saveScriptUrl();localStorage.setItem('sw_org_name',document.getElementById('org-name').value);localStorage.setItem('sw_org_email',document.getElementById('org-email').value);}
 function exportAllData(){const d={families:FAMILIES,invoices:INVOICES,classes:CLASSES,items:ITEMS_LIB,recurring:RECURRING,exported:TODAY};const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});const url=URL.createObjectURL(b);const a=document.createElement('a');a.href=url;a.download='stepwise-data-'+TODAY+'.json';a.click();URL.revokeObjectURL(url);toast('📥 Exported!');}
-function clearAllData(){['sw_families','sw_invoices','sw_classes','sw_items','sw_recurring','sw_item_cats'].forEach(k=>localStorage.removeItem(k));FAMILIES=[];INVOICES=[];CLASSES=[];ITEMS_LIB=[];RECURRING=[];ITEM_CATS=['tuition','fee','gear','event','other'];toast('🗑 All data cleared');renderDashboard();}
+function clearAllData(){['sw_families','sw_invoices','sw_classes','sw_items','sw_recurring','sw_item_cats','sw_programs'].forEach(k=>localStorage.removeItem(k));FAMILIES=[];INVOICES=[];CLASSES=[];ITEMS_LIB=[];RECURRING=[];ITEM_CATS=['tuition','fee','gear','event','other'];toast('🗑 All data cleared');renderDashboard();}
 
 // ── UTILS ─────────────────────────────────────────────
 function openModal(id){document.getElementById(id).classList.add('open');}
@@ -3018,6 +3149,7 @@ function loadSettings() {
   updateConnectStatus(!!url);
   updateMyAccountSection();
   renderUsersList();
+  renderProgramsList();
   const appLink = localStorage.getItem('sw_app_link') || '';
   const linkEl = document.getElementById('app-link-url');
   if (linkEl) linkEl.value = appLink;
